@@ -66,7 +66,7 @@ class Runner implements BootstrapContract
 
     protected function initDirectories(): void
     {
-        $output = $this->settings->path('tests/_output');
+        $output = $this->settings->outputPath();
 
         if (!is_dir($output)) {
             mkdir($output, 0o777, true);

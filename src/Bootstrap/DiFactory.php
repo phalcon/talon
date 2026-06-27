@@ -30,7 +30,7 @@ final class DiFactory
 
         $di = new FactoryDefault();
         $di->setShared('config', fn () => new Config([
-            'root' => $settings->path(),
+            'root' => $settings->rootPath(),
         ]));
 
         if ($register !== null) {

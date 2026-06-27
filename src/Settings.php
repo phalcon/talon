@@ -17,6 +17,8 @@ use Phalcon\Talon\Contracts\Settings as SettingsContract;
 use Phalcon\Talon\Exceptions\InvalidConfiguration;
 use Phalcon\Talon\Exceptions\UnknownDriver;
 
+use function dirname;
+use function file_exists;
 use function getcwd;
 use function getenv;
 use function in_array;
@@ -36,6 +38,7 @@ final class Settings implements SettingsContract
      * @param array<string, mixed>                $redis
      * @param array<string, mixed>                $memcached
      * @param array<string, mixed>                $extra
+     * @param array<string, mixed>                $paths
      */
     private function __construct(
         private string $root,
@@ -43,6 +46,7 @@ final class Settings implements SettingsContract
         private array $redis,
         private array $memcached,
         private array $extra = [],
+        private array $paths = [],
     ) {
     }
 
@@ -57,7 +61,7 @@ final class Settings implements SettingsContract
         }
 
         $extra = $config;
-        unset($extra['root'], $extra['db'], $extra['redis'], $extra['memcached']);
+        unset($extra['root'], $extra['db'], $extra['redis'], $extra['memcached'], $extra['paths']);
 
         return new self(
             $root,
@@ -65,6 +69,7 @@ final class Settings implements SettingsContract
             self::section($config, 'redis'),
             self::section($config, 'memcached'),
             $extra,
+            self::section($config, 'paths'),
         );
     }
 
@@ -80,7 +85,7 @@ final class Settings implements SettingsContract
         };
 
         $rootOverride = $overrides['root'] ?? null;
-        $root         = is_string($rootOverride) && $rootOverride !== '' ? $rootOverride : (getcwd() ?: '.');
+        $root         = is_string($rootOverride) && $rootOverride !== '' ? $rootOverride : self::discoverRoot();
 
         return new self(
             $root,
@@ -173,11 +178,72 @@ final class Settings implements SettingsContract
         return $this->redis;
     }
 
-    public function path(string $relative = ''): string
+    public function cachePath(string $relative = ''): string
+    {
+        return $this->dir('cache', 'tests/_output/cache', $relative);
+    }
+
+    public function dataPath(string $relative = ''): string
+    {
+        return $this->dir('data', 'tests/_data', $relative);
+    }
+
+    public function logsPath(string $relative = ''): string
+    {
+        return $this->dir('logs', 'tests/_output/logs', $relative);
+    }
+
+    public function outputPath(string $relative = ''): string
+    {
+        return $this->dir('output', 'tests/_output', $relative);
+    }
+
+    public function rootPath(string $relative = ''): string
     {
         $root = rtrim($this->root, '/');
 
         return $relative === '' ? $root : $root . '/' . ltrim($relative, '/');
+    }
+
+    public function supportPath(string $relative = ''): string
+    {
+        return $this->dir('support', 'tests/support', $relative);
+    }
+
+    public function testsPath(string $relative = ''): string
+    {
+        return $this->dir('tests', 'tests', $relative);
+    }
+
+    private function dir(string $key, string $default, string $relative): string
+    {
+        $override = $this->paths[$key] ?? null;
+        $sub      = is_string($override) ? $override : $default;
+
+        if ($relative !== '') {
+            $sub = rtrim($sub, '/') . '/' . ltrim($relative, '/');
+        }
+
+        return $this->rootPath($sub);
+    }
+
+    private static function discoverRoot(): string
+    {
+        $start   = getcwd() ?: '.';
+        $current = $start;
+
+        while (true) {
+            if (file_exists($current . '/composer.json')) {
+                return $current;
+            }
+
+            $parent = dirname($current);
+            if ($parent === $current) {
+                return $start;
+            }
+
+            $current = $parent;
+        }
     }
 
     /**

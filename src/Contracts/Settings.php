@@ -34,5 +34,17 @@ interface Settings
      */
     public function getRedisOptions(): array;
 
-    public function path(string $relative = ''): string;
+    public function cachePath(string $relative = ''): string;
+
+    public function dataPath(string $relative = ''): string;
+
+    public function logsPath(string $relative = ''): string;
+
+    public function outputPath(string $relative = ''): string;
+
+    public function rootPath(string $relative = ''): string;
+
+    public function supportPath(string $relative = ''): string;
+
+    public function testsPath(string $relative = ''): string;
 }
