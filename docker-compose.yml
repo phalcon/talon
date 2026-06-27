@@ -29,8 +29,6 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DATA_MYSQL_PASS:-secret}
       MYSQL_DATABASE: ${DATA_MYSQL_NAME:-talon}
-    ports:
-      - "${MYSQL_PORT_HOST:-3306}:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DATA_MYSQL_PASS:-secret}"]
       interval: 5s
@@ -46,8 +44,6 @@ services:
       POSTGRES_PASSWORD: ${DATA_POSTGRES_PASS:-secret}
       POSTGRES_USER: ${DATA_POSTGRES_USER:-postgres}
       POSTGRES_DB: ${DATA_POSTGRES_NAME:-talon}
-    ports:
-      - "${PGSQL_PORT_HOST:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DATA_POSTGRES_USER:-postgres}"]
       interval: 5s
@@ -59,14 +55,10 @@ services:
   redis:
     image: redis:7
     container_name: ${PROJECT_PREFIX:-talon}-redis
-    ports:
-      - "${REDIS_PORT_HOST:-6379}:6379"
 
   memcached:
     image: memcached:1.6
     container_name: ${PROJECT_PREFIX:-talon}-memcached
-    ports:
-      - "${MEMCACHED_PORT_HOST:-11211}:11211"
 
 volumes:
   vendor:
