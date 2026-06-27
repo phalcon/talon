@@ -78,7 +78,7 @@ final class UserTest extends AbstractDatabaseTestCase
 ```
 
 The driver comes from the `driver` env (`sqlite`, `mysql`, `pgsql`); credentials come from
-`Settings` (env vars by default — see `.env.example`).
+`Settings` (env vars by default — see `resources/.env.example`).
 
 ## Functional tests
 

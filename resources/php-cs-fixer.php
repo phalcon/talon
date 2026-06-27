@@ -27,4 +27,5 @@ return (new PhpCsFixer\Config())
         'no_unused_imports'             => true,
         'array_syntax'                  => ['syntax' => 'short'],
     ])
-    ->setFinder($finder);
+    ->setFinder($finder)
+    ->setCacheFile(__DIR__ . '/../tests/_output/.php-cs-fixer.cache');

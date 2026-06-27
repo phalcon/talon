@@ -19,7 +19,7 @@ jobs:
 
       - name: Build image
         run: |
-          cp .env.example .env
+          cp resources/.env.example .env
           PHP_VERSION=${{ matrix.php }} PHALCON_VARIANT=${{ matrix.variant }} docker compose build app
 
       - name: Unit + sqlite
