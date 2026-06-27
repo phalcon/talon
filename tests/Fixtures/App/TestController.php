@@ -23,8 +23,40 @@ class TestController extends Controller
         return $this->response->setContent('empty');
     }
 
+    public function forwardAction(): void
+    {
+        $this->dispatcher->forward(
+            [
+                'controller' => 'test',
+                'action'     => 'empty',
+            ]
+        );
+    }
+
+    public function headerAction(): ResponseInterface
+    {
+        $this->response->setHeader('X-Talon', 'yes');
+
+        return $this->response->setContent('header');
+    }
+
     public function helloAction(): ResponseInterface
     {
         return $this->response->setContent('Hello Nikos');
+    }
+
+    public function redirectAction(): ResponseInterface
+    {
+        $this->response->setStatusCode(302, 'Found');
+        $this->response->setHeader('Location', '/target');
+
+        return $this->response;
+    }
+
+    public function statusAction(): ResponseInterface
+    {
+        $this->response->setStatusCode(404, 'Not Found');
+
+        return $this->response->setContent('nope');
     }
 }

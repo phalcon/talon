@@ -29,4 +29,11 @@ final class EnvironmentTest extends TestCase
             Environment::viaExtension() || Environment::viaImplementation()
         );
     }
+
+    public function testProviderChecksReturnBooleans(): void
+    {
+        // Call each directly so both branches are exercised regardless of runtime.
+        $this->assertIsBool(Environment::viaExtension());
+        $this->assertIsBool(Environment::viaImplementation());
+    }
 }

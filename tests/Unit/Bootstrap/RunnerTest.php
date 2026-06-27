@@ -20,6 +20,9 @@ use Phalcon\Talon\Settings;
 use Phalcon\Talon\Talon;
 use PHPUnit\Framework\TestCase;
 
+use function rmdir;
+use function uniqid;
+
 final class RunnerTest extends TestCase
 {
     protected function tearDown(): void
@@ -84,5 +87,20 @@ final class RunnerTest extends TestCase
         Runner::for($settings)->boot();
 
         $this->assertSame($settings, Talon::settings());
+    }
+
+    public function testBootCreatesTheOutputDirectory(): void
+    {
+        Talon::reset();
+        $root = dirname(__DIR__, 2) . '/_output/runner-' . uniqid();
+        $settings = Settings::fromArray(['root' => $root]);
+
+        Runner::for($settings)->boot();
+
+        $this->assertDirectoryExists($root . '/tests/_output');
+
+        rmdir($root . '/tests/_output');
+        rmdir($root . '/tests');
+        rmdir($root);
     }
 }

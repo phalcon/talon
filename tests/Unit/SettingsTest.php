@@ -110,4 +110,37 @@ final class SettingsTest extends TestCase
 
         $this->assertSame('redis-host', $settings->getRedisOptions()['host']);
     }
+
+    public function testPgsqlDsn(): void
+    {
+        $settings = Settings::fromArray([
+            'root' => '/app',
+            'db'   => ['pgsql' => ['host' => '127.0.0.1', 'port' => 5432, 'dbname' => 'talon']],
+        ]);
+
+        $this->assertSame(
+            'pgsql:host=127.0.0.1;port=5432;dbname=talon',
+            $settings->getDatabaseDsn('pgsql')
+        );
+    }
+
+    public function testGetReturnsExtraConfig(): void
+    {
+        $settings = Settings::fromArray(['root' => '/app', 'custom' => 'value']);
+
+        $this->assertSame('value', $settings->get('custom'));
+        $this->assertSame('fallback', $settings->get('missing', 'fallback'));
+    }
+
+    public function testDiscoverRootFallsBackWhenNoComposerJson(): void
+    {
+        $cwd = getcwd();
+
+        try {
+            chdir('/');
+            $this->assertSame('/', Settings::fromEnv()->rootPath());
+        } finally {
+            chdir($cwd ?: '/srv');
+        }
+    }
 }
