@@ -4,6 +4,6 @@
     <arg value="-colors"/>
     <arg name="extensions" value="php"/>
     <rule ref="PSR12"/>
-    <file>src</file>
-    <file>tests</file>
+    <file>../src</file>
+    <file>../tests</file>
 </ruleset>

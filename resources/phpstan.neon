@@ -1,7 +1,7 @@
 parameters:
     level: max
     paths:
-        - src
+        - %currentWorkingDirectory%/src
     bootstrapFiles:
         - %currentWorkingDirectory%/vendor/autoload.php
     treatPhpDocTypesAsCertain: false
