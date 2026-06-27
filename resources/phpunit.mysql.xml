@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="../tests/bootstrap.php"
+         cacheDirectory="../tests/_output/.phpunit.cache"
+         colors="true">
+    <testsuites>
+        <testsuite name="mysql">
+            <directory>../tests/Unit</directory>
+            <directory>../tests/Traits</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="driver" value="mysql"/>
+        <env name="dump_file" value="resources/schema/mysql.sql"/>
+        <env name="initial_queries" value="SET NAMES utf8mb4;"/>
+    </php>
+</phpunit>
