@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: resources/docker/Dockerfile
       args:
-        PHP_VERSION: ${PHP_VERSION:-8.3}
+        PHP_VERSION: ${PHP_VERSION:-8.5}
         PHALCON_VARIANT: ${PHALCON_VARIANT:-v5}
         UID: ${UID:-1000}
         GID: ${GID:-1000}
