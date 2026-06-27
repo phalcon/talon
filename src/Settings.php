@@ -202,7 +202,11 @@ final class Settings implements SettingsContract
     {
         $root = rtrim($this->root, '/');
 
-        return $relative === '' ? $root : $root . '/' . ltrim($relative, '/');
+        if ($relative === '') {
+            return $root === '' ? '/' : $root;
+        }
+
+        return $root . '/' . ltrim($relative, '/');
     }
 
     public function supportPath(string $relative = ''): string
