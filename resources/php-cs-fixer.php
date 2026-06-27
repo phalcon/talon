@@ -17,10 +17,14 @@ $finder = PhpCsFixer\Finder::create()
 return (new PhpCsFixer\Config())
     ->setRiskyAllowed(true)
     ->setRules([
-        '@PSR12'               => true,
-        'declare_strict_types' => true,
-        'ordered_imports'      => ['sort_algorithm' => 'alpha'],
-        'no_unused_imports'    => true,
-        'array_syntax'         => ['syntax' => 'short'],
+        '@PSR12'                        => true,
+        'declare_strict_types'          => true,
+        'blank_line_between_import_groups' => true,
+        'ordered_imports'               => [
+            'sort_algorithm' => 'alpha',
+            'imports_order'  => ['class', 'function', 'const'],
+        ],
+        'no_unused_imports'             => true,
+        'array_syntax'                  => ['syntax' => 'short'],
     ])
     ->setFinder($finder);

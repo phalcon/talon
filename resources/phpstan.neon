@@ -2,6 +2,9 @@ parameters:
     level: max
     paths:
         - %currentWorkingDirectory%/src
+        - %currentWorkingDirectory%/tests
+    excludePaths:
+        - %currentWorkingDirectory%/tests/Fixtures
     bootstrapFiles:
         - %currentWorkingDirectory%/vendor/autoload.php
     treatPhpDocTypesAsCertain: false
