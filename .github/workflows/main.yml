@@ -31,7 +31,9 @@ jobs:
           docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.pgsql.xml
         continue-on-error: ${{ matrix.variant == 'v6' }}
 
+      # Runtime-independent: run once on a single (v5) cell rather than all ten.
       - name: Static analysis, coding standard, layout
+        if: matrix.variant == 'v5' && matrix.php == '8.3'
         run: |
           docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer analyze
           docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer cs
