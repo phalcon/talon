@@ -4,5 +4,4 @@
 /tests/_output/*
 !/tests/_output/.gitkeep
 .phpunit.result.cache
-composer.lock
 .env

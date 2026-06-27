@@ -1,16 +1,16 @@
 # Phalcon Talon
 
-Test harness and Phalcon bootstrapping for PHPUnit and beyond — the part of Phalcon that
+Test harness and Phalcon bootstrapping for PHPUnit and beyond - the part of Phalcon that
 catches the bugs.
 
 Talon gives any Phalcon project a small, composable foundation for writing unit,
 integration, and functional tests:
 
-- **Engine classes** — framework-neutral logic (`Settings`, `Environment`,
+- **Engine classes** - framework-neutral logic (`Settings`, `Environment`,
   `Database\Connection`, `Bootstrap\Runner`, `Bootstrap\DiFactory`, the `Talon` facade).
-- **Traits** — the core public API; usable from PHPUnit, Pest, or anything with a
+- **Traits** - the core public API; usable from PHPUnit, Pest, or anything with a
   PHPUnit-compatible `$this`.
-- **PHPUnit base classes** — thin, ready-to-extend `Abstract*TestCase` classes that compose
+- **PHPUnit base classes** - thin, ready-to-extend `Abstract*TestCase` classes that compose
   the traits.
 
 ---
@@ -41,7 +41,7 @@ integration, and functional tests:
 ## Requirements
 
 - PHP `^8.1`
-- Phalcon — **either** the `ext-phalcon` C extension (`^5`) **or** the `phalcon/phalcon`
+- Phalcon - **either** the `ext-phalcon` C extension (`^5`) **or** the `phalcon/phalcon`
   PHP implementation (`^6`). Talon detects whichever is present; you do not configure this.
 
 `composer.json` deliberately does **not** hard-require either provider (Composer cannot
@@ -74,9 +74,9 @@ The heavy lifting lives in plain engine classes so it can be reused outside a `T
 
 Traits split into two kinds:
 
-- **Pure** — `ReflectionTrait` and the file-operation half of `FileSystemTrait`. No PHPUnit
+- **Pure** - `ReflectionTrait` and the file-operation half of `FileSystemTrait`. No PHPUnit
   dependency.
-- **Host-needed** — `DatabaseTrait`, `ServicesTrait`, `ResultSetTrait`, `FunctionalTrait`,
+- **Host-needed** - `DatabaseTrait`, `ServicesTrait`, `ResultSetTrait`, `FunctionalTrait`,
   and the `assertFileContents*` helpers. They call `$this->assert*()` /
   `$this->getMockBuilder()`, so they require a PHPUnit-compatible host.
 
@@ -108,7 +108,7 @@ static slot that the traits read by default:
 ### Lifecycle hooks
 
 Need the old `loadIni` / `loadFolders` style of setup? Use the `Runner` directly and attach
-`before` / `after` hooks per stage — no subclassing required:
+`before` / `after` hooks per stage - no subclassing required:
 
 ```php
 use Phalcon\Talon\Bootstrap\Runner;
@@ -328,7 +328,7 @@ Redis: `getRedisKey`, `setRedisKey`, `hasRedisKey`, `doesNotHaveRedisKey`,
 ### Functional tests
 
 `AbstractFunctionalTestCase` adds `FunctionalTrait`. You supply your configured
-application through `appFactory()` — Talon never owns your container. Works with
+application through `appFactory()` - Talon never owns your container. Works with
 `Mvc\Application` and `Micro`.
 
 ```php
@@ -369,7 +369,7 @@ Set `protected bool $resetSuperglobals = true;` to clear `$_GET`/`$_POST`/… on
 ## Mocking a resultset
 
 `ResultSetTrait::mockResultSet()` builds a mocked `Phalcon\Mvc\Model\Resultset` with no
-database — handy for testing code that consumes resultsets.
+database - handy for testing code that consumes resultsets.
 
 ```php
 use Phalcon\Talon\Traits\ResultSetTrait;
@@ -448,9 +448,9 @@ These plain classes are usable anywhere, not just inside a `TestCase`.
 | `Settings` | `fromArray()`, `fromEnv()`, `rootPath()`/`outputPath()`/…, `getDatabaseDsn()`, `getDatabaseOptions()`, `getRedisOptions()`, `getMemcachedOptions()`, `get()` |
 | `Environment` | `phalconAvailable()`, `viaExtension()`, `viaImplementation()` |
 | `Database\Connection` | `getPdo()`, `loadSchema($file)`, `select($table, $criteria)`, `execute($sql)` |
-| `Database\StatementSplitter` | `split($sql): array` — splits a dump into statements (handles `DELIMITER` and pgsql `$$` blocks) |
+| `Database\StatementSplitter` | `split($sql): array` - splits a dump into statements (handles `DELIMITER` and pgsql `$$` blocks) |
 | `Bootstrap\Runner` | `for()`, `before()`, `after()`, `boot()` |
-| `Bootstrap\DiFactory` | `create(?callable $register = null): DiInterface` — a `FactoryDefault` seeded with `config` |
+| `Bootstrap\DiFactory` | `create(?callable $register = null): DiInterface` - a `FactoryDefault` seeded with `config` |
 | `Talon` | `boot()`, `useSettings()`, `settings()`, `reset()` |
 
 Swappable contracts live under `Phalcon\Talon\Contracts\`: `Settings`, `Connection`,

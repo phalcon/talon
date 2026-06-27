@@ -15,7 +15,7 @@
 [![OpenCollective Backers][oc-backers-badge]][oc-backers-link]
 [![OpenCollective Sponsors][oc-sponsors-badge]][oc-sponsors-link]
 
-Test harness and Phalcon bootstrapping for PHPUnit and beyond — the part of Phalcon that
+Test harness and Phalcon bootstrapping for PHPUnit and beyond - the part of Phalcon that
 catches the bugs.
 
 Talon provides framework-neutral **traits** (the core), ready-to-extend **PHPUnit base
@@ -25,7 +25,7 @@ and functional tests with minimal boilerplate.
 ## Requirements
 
 - PHP `^8.1`
-- Phalcon — either the `ext-phalcon` C extension (`^5`) **or** the `phalcon/phalcon` PHP
+- Phalcon - either the `ext-phalcon` C extension (`^5`) **or** the `phalcon/phalcon` PHP
   implementation (`^6`). Talon detects whichever is present.
 
 ## Install
@@ -93,11 +93,11 @@ final class UserTest extends AbstractDatabaseTestCase
 ```
 
 The driver comes from the `driver` env (`sqlite`, `mysql`, `pgsql`); credentials come from
-`Settings` (env vars by default — see `resources/.env.example`).
+`Settings` (env vars by default - see `resources/.env.example`).
 
 ## Functional tests
 
-The package never owns your container — hand it your configured application:
+The package never owns your container - hand it your configured application:
 
 ```php
 use Phalcon\Talon\PHPUnit\AbstractFunctionalTestCase;

@@ -19,8 +19,8 @@
         "ext-sqlite3": "*"
     },
     "suggest": {
-        "ext-phalcon": "Phalcon C extension (^5) — one of ext-phalcon or phalcon/phalcon is required",
-        "phalcon/phalcon": "Phalcon PHP implementation (^6) — alternative to the C extension",
+        "ext-phalcon": "Phalcon C extension (^5) - one of ext-phalcon or phalcon/phalcon is required",
+        "phalcon/phalcon": "Phalcon PHP implementation (^6) - alternative to the C extension",
         "predis/predis": "For the Services (Redis) helpers",
         "ext-memcached": "For the Services (Memcached) helpers"
     },
