@@ -10,8 +10,8 @@ services:
         GID: ${GID:-1000}
     container_name: ${PROJECT_PREFIX:-talon}-app
     volumes:
-      - .:/app
-      - vendor:/app/vendor
+      - .:/srv
+      - vendor:/srv/vendor
     env_file: .env
     depends_on:
       mysql:
