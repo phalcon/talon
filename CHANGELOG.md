@@ -1,6 +1,25 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.0](https://github.com/phalcon/talon/releases/tag/v0.2.0) (2026-xx-xx)
+
+### Changed
+
+### Added
+
+- `AbstractUnitTestCase::mockWithoutConstructor()` / `mockWithConstructor()` - build PHPUnit
+  mocks with the constructor disabled or invoked (with constructor arguments). Method overrides
+  become stubs (a Closure body, a return value, or `null` for a type-safe default) and property
+  overrides are set via reflection.
+
+### Fixed
+
+- `ServicesTrait` now skips (instead of erroring) when the backing client is unavailable: the
+  memcached helpers skip when `ext-memcached` is not loaded, and the redis helpers skip when the
+  `predis/predis` package is not installed.
+
+### Removed
+
+## [0.1.0](https://github.com/phalcon/talon/releases/tag/v0.1.0) (2026-06-27)
 
 ### Changed
 

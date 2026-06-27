@@ -13,13 +13,17 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\PHPUnit;
 
+use Closure;
 use Phalcon\Talon\Environment;
 use Phalcon\Talon\Traits\FileSystemTrait;
 use Phalcon\Talon\Traits\ReflectionTrait;
 use PHPUnit\Framework\SkippedTestSuiteError;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
+use function array_values;
 use function extension_loaded;
+use function method_exists;
 use function sprintf;
 
 abstract class AbstractUnitTestCase extends TestCase
@@ -46,5 +50,108 @@ abstract class AbstractUnitTestCase extends TestCase
             );
         }
         // @codeCoverageIgnoreEnd
+    }
+
+    /**
+     * Build a mock of the class with its constructor invoked using the given arguments.
+     *
+     * Method overrides are applied as stubs, so the calls the constructor makes to those
+     * methods are neutralized while the constructor body itself still runs.
+     *
+     * @template T of object
+     *
+     * @param class-string<T>      $class
+     * @param array<int, mixed>    $ctorArgs
+     * @param array<string, mixed> $overrides
+     *
+     * @return T
+     */
+    public function mockWithConstructor(string $class, array $ctorArgs = [], array $overrides = []): object
+    {
+        /** @var T $mock */
+        $mock = $this->buildMock($class, $overrides, true, $ctorArgs);
+
+        return $mock;
+    }
+
+    /**
+     * Build a mock of the class without invoking its constructor.
+     *
+     * Keys in $overrides that name a method are stubbed - a Closure becomes the method
+     * body, any other non-null value becomes the return value, and null leaves PHPUnit's
+     * type-compatible default. Any other key is treated as a property and set via reflection.
+     *
+     * @template T of object
+     *
+     * @param class-string<T>      $class
+     * @param array<string, mixed> $overrides
+     *
+     * @return T
+     */
+    public function mockWithoutConstructor(string $class, array $overrides = []): object
+    {
+        /** @var T $mock */
+        $mock = $this->buildMock($class, $overrides, false, []);
+
+        return $mock;
+    }
+
+    /**
+     * @param class-string         $class
+     * @param array<string, mixed> $overrides
+     * @param array<int, mixed>    $ctorArgs
+     */
+    private function buildMock(string $class, array $overrides, bool $withConstructor, array $ctorArgs): object
+    {
+        $methodNames       = [];
+        $methodOverrides   = [];
+        $propertyOverrides = [];
+
+        foreach ($overrides as $name => $value) {
+            if ('' !== $name && method_exists($class, $name)) {
+                $methodNames[]          = $name;
+                $methodOverrides[$name] = $value;
+
+                continue;
+            }
+
+            $propertyOverrides[$name] = $value;
+        }
+
+        if ([] === $methodNames) {
+            $object = $withConstructor
+                ? new $class(...array_values($ctorArgs))
+                : (new ReflectionClass($class))->newInstanceWithoutConstructor();
+        } else {
+            $builder = $this->getMockBuilder($class)
+                            ->onlyMethods($methodNames);
+
+            if ($withConstructor) {
+                $builder->enableOriginalConstructor()
+                        ->setConstructorArgs(array_values($ctorArgs));
+            } else {
+                $builder->disableOriginalConstructor();
+            }
+
+            $object = $builder->getMock();
+
+            foreach ($methodOverrides as $name => $value) {
+                if ($value instanceof Closure) {
+                    $object->method($name)->willReturnCallback($value);
+
+                    continue;
+                }
+
+                if (null !== $value) {
+                    $object->method($name)->willReturn($value);
+                }
+            }
+        }
+
+        foreach ($propertyOverrides as $name => $value) {
+            $this->setProtectedProperty($object, $name, $value);
+        }
+
+        return $object;
     }
 }
