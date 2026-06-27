@@ -143,4 +143,24 @@ final class SettingsTest extends TestCase
             chdir($cwd ?: '/srv');
         }
     }
+
+    public function testDiscoverRootWalksUpToComposerJson(): void
+    {
+        $cwd = getcwd();
+
+        try {
+            // A nested directory with no composer.json of its own.
+            chdir(__DIR__);
+            $this->assertFileExists(Settings::fromEnv()->rootPath('composer.json'));
+        } finally {
+            chdir($cwd ?: '/srv');
+        }
+    }
+
+    public function testNonArraySectionIsIgnored(): void
+    {
+        $settings = Settings::fromArray(['root' => '/app', 'redis' => 'not-an-array']);
+
+        $this->assertSame([], $settings->getRedisOptions());
+    }
 }

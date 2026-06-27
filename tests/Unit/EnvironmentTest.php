@@ -30,10 +30,15 @@ final class EnvironmentTest extends TestCase
         );
     }
 
-    public function testProviderChecksReturnBooleans(): void
+    public function testProvidersMatchAvailability(): void
     {
-        // Call each directly so both branches are exercised regardless of runtime.
-        $this->assertIsBool(Environment::viaExtension());
-        $this->assertIsBool(Environment::viaImplementation());
+        // Evaluate each into a variable so neither is short-circuited away.
+        $viaImplementation = Environment::viaImplementation();
+        $viaExtension      = Environment::viaExtension();
+
+        $this->assertSame(
+            $viaExtension || $viaImplementation,
+            Environment::phalconAvailable()
+        );
     }
 }

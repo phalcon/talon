@@ -45,6 +45,22 @@ final class ResultSetTraitTest extends TestCase
         $this->assertNull($mock->getFirst());
     }
 
+    public function testMockSupportsIteration(): void
+    {
+        $first  = $this->createMock(ModelInterface::class);
+        $second = $this->createMock(ModelInterface::class);
+        $mock   = $this->mockResultSet([$first, $second]);
+
+        $this->assertTrue($mock->valid());
+        $this->assertSame(0, $mock->key());
+
+        $mock->next();
+        $this->assertTrue($mock->valid());
+
+        $mock->next();
+        $this->assertFalse($mock->valid());
+    }
+
     public function testInvalidClassThrows(): void
     {
         $this->expectException(InvalidResultsetClass::class);

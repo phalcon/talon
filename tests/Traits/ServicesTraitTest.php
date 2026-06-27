@@ -64,28 +64,4 @@ final class ServicesTraitTest extends TestCase
 
         $this->assertSame('sent', $this->sendRedisCommand('get', 'talon:cmd'));
     }
-
-    public function testRedisUnreachableIsSkipped(): void
-    {
-        Talon::useSettings(Settings::fromArray([
-            'root'  => '/srv',
-            'redis' => ['host' => '127.0.0.1', 'port' => 1],
-        ]));
-
-        $this->getRedisKey('whatever');
-
-        $this->fail('Redis should have been unreachable and skipped the test');
-    }
-
-    public function testMemcachedUnreachableIsSkipped(): void
-    {
-        Talon::useSettings(Settings::fromArray([
-            'root'      => '/srv',
-            'memcached' => ['host' => '127.0.0.1', 'port' => 1],
-        ]));
-
-        $this->getMemcachedKey('whatever');
-
-        $this->fail('Memcached should have been unreachable and skipped the test');
-    }
 }

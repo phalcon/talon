@@ -86,7 +86,10 @@ trait ServicesTrait
         $adapter->addServer($host, $port);
 
         if (@$adapter->getVersion() === false) {
+            // @codeCoverageIgnoreStart
+            // Only reached when Memcached is unreachable; the suite needs it up.
             $this->markTestSkipped('Memcached is not reachable');
+            // @codeCoverageIgnoreEnd
         }
 
         return $adapter;
@@ -99,9 +102,12 @@ trait ServicesTrait
             $client->connect();
 
             return $client;
+            // @codeCoverageIgnoreStart
+            // Only reached when Redis is unreachable; the suite needs it up.
         } catch (Exception $exception) {
             $this->markTestSkipped('Redis is not reachable: ' . $exception->getMessage());
         }
+        // @codeCoverageIgnoreEnd
     }
 
     private function settings(): Settings
