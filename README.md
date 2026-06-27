@@ -6,6 +6,8 @@
 [![License][license-badge]][license-link]
 
 [![Talon CI][talon-ci-badge]][talon-ci-link]
+[![Quality Gate Status][sonar-quality-badge]][sonar-link]
+[![Coverage][sonar-coverage-badge]][sonar-link]
 [![PDS Skeleton][pds-skeleton-badge]][pds-skeleton-link]
 
 [![Discord][discord-badge]][discord-link]
@@ -176,7 +178,6 @@ Codeception adapters are planned for a future release.
 BSD-3-Clause. See [LICENSE](LICENSE).
 
 <!-- Badges -->
-<!-- SonarQube badges intentionally omitted until the project is added to SonarCloud. -->
 [packagist-version-badge]:   https://img.shields.io/packagist/v/phalcon/talon?include_prereleases&style=flat-square&logo=packagist&logoColor=white
 [packagist-version-link]:    https://packagist.org/packages/phalcon/talon
 [packagist-downloads-badge]: https://img.shields.io/packagist/dt/phalcon/talon?style=flat-square&logo=packagist&logoColor=white
@@ -186,6 +187,9 @@ BSD-3-Clause. See [LICENSE](LICENSE).
 [license-link]:              https://github.com/phalcon/talon/blob/master/LICENSE
 [talon-ci-badge]:            https://github.com/phalcon/talon/actions/workflows/main.yml/badge.svg?branch=master
 [talon-ci-link]:             https://github.com/phalcon/talon/actions/workflows/main.yml
+[sonar-quality-badge]:       https://sonarcloud.io/api/project_badges/measure?project=phalcon_talon&metric=alert_status
+[sonar-coverage-badge]:      https://sonarcloud.io/api/project_badges/measure?project=phalcon_talon&metric=coverage
+[sonar-link]:                https://sonarcloud.io/summary/new_code?id=phalcon_talon
 [pds-skeleton-badge]:        https://img.shields.io/badge/pds-skeleton-blue.svg?style=flat-square
 [pds-skeleton-link]:         https://github.com/php-pds/skeleton
 [discord-badge]:             https://img.shields.io/discord/310910488152375297?label=Discord&logo=discord&style=flat-square
