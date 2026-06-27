@@ -29,4 +29,16 @@ final class EnvironmentTest extends TestCase
             Environment::viaExtension() || Environment::viaImplementation()
         );
     }
+
+    public function testProvidersMatchAvailability(): void
+    {
+        // Evaluate each into a variable so neither is short-circuited away.
+        $viaImplementation = Environment::viaImplementation();
+        $viaExtension      = Environment::viaExtension();
+
+        $this->assertSame(
+            $viaExtension || $viaImplementation,
+            Environment::phalconAvailable()
+        );
+    }
 }

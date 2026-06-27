@@ -22,8 +22,8 @@ apt-get install -yq --no-install-recommends \
     default-mysql-client postgresql-client \
     libicu-dev libzip-dev libpq-dev libsqlite3-dev libmemcached-dev zlib1g-dev
 docker-php-ext-install intl zip pdo_mysql pdo_pgsql pdo_sqlite
-pecl install redis memcached
-docker-php-ext-enable redis memcached
+pecl install redis memcached pcov
+docker-php-ext-enable redis memcached pcov
 apt-get clean -y
 rm -rf /var/lib/apt/lists/*
 EOT

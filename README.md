@@ -1,6 +1,21 @@
 # Phalcon Talon
 
-Test harness and Phalcon bootstrapping for PHPUnit and beyond — the part of Phalcon that
+[![Latest Version][packagist-version-badge]][packagist-version-link]
+[![PHP Version][php-version-badge]][packagist-version-link]
+[![Total Downloads][packagist-downloads-badge]][packagist-downloads-link]
+[![License][license-badge]][license-link]
+
+[![Talon CI][talon-ci-badge]][talon-ci-link]
+[![Quality Gate Status][sonar-quality-badge]][sonar-link]
+[![Coverage][sonar-coverage-badge]][sonar-link]
+[![PDS Skeleton][pds-skeleton-badge]][pds-skeleton-link]
+
+[![Discord][discord-badge]][discord-link]
+[![Contributors][contributors-badge]][contributors-link]
+[![OpenCollective Backers][oc-backers-badge]][oc-backers-link]
+[![OpenCollective Sponsors][oc-sponsors-badge]][oc-sponsors-link]
+
+Test harness and Phalcon bootstrapping for PHPUnit and beyond - the part of Phalcon that
 catches the bugs.
 
 Talon provides framework-neutral **traits** (the core), ready-to-extend **PHPUnit base
@@ -10,7 +25,7 @@ and functional tests with minimal boilerplate.
 ## Requirements
 
 - PHP `^8.1`
-- Phalcon — either the `ext-phalcon` C extension (`^5`) **or** the `phalcon/phalcon` PHP
+- Phalcon - either the `ext-phalcon` C extension (`^5`) **or** the `phalcon/phalcon` PHP
   implementation (`^6`). Talon detects whichever is present.
 
 ## Install
@@ -40,7 +55,7 @@ use Phalcon\Talon\Settings;
 
 Runner::for(Settings::fromArray(['root' => __DIR__ . '/..']))
     ->before(Stage::Environment, fn () => ini_set('memory_limit', '512M'))
-    ->after(Stage::Directories, fn ($settings) => mkdir($settings->path('tests/_output/screens'), 0777, true))
+    ->after(Stage::Directories, fn ($settings) => mkdir($settings->outputPath('screens'), 0777, true))
     ->boot();
 ```
 
@@ -78,11 +93,11 @@ final class UserTest extends AbstractDatabaseTestCase
 ```
 
 The driver comes from the `driver` env (`sqlite`, `mysql`, `pgsql`); credentials come from
-`Settings` (env vars by default — see `resources/.env.example`).
+`Settings` (env vars by default - see `resources/.env.example`).
 
 ## Functional tests
 
-The package never owns your container — hand it your configured application:
+The package never owns your container - hand it your configured application:
 
 ```php
 use Phalcon\Talon\PHPUnit\AbstractFunctionalTestCase;
@@ -161,3 +176,27 @@ Codeception adapters are planned for a future release.
 ## License
 
 BSD-3-Clause. See [LICENSE](LICENSE).
+
+<!-- Badges -->
+[packagist-version-badge]:   https://img.shields.io/packagist/v/phalcon/talon?include_prereleases&style=flat-square&logo=packagist&logoColor=white
+[packagist-version-link]:    https://packagist.org/packages/phalcon/talon
+[packagist-downloads-badge]: https://img.shields.io/packagist/dt/phalcon/talon?style=flat-square&logo=packagist&logoColor=white
+[packagist-downloads-link]:  https://packagist.org/packages/phalcon/talon/stats
+[php-version-badge]:          https://img.shields.io/packagist/php-v/phalcon/talon?style=flat-square&logo=php&logoColor=white
+[license-badge]:             https://img.shields.io/github/license/phalcon/talon?style=flat-square&logo=opensourceinitiative&logoColor=white
+[license-link]:              https://github.com/phalcon/talon/blob/master/LICENSE
+[talon-ci-badge]:            https://github.com/phalcon/talon/actions/workflows/main.yml/badge.svg?branch=master
+[talon-ci-link]:             https://github.com/phalcon/talon/actions/workflows/main.yml
+[sonar-quality-badge]:       https://sonarcloud.io/api/project_badges/measure?project=phalcon_talon&metric=alert_status
+[sonar-coverage-badge]:      https://sonarcloud.io/api/project_badges/measure?project=phalcon_talon&metric=coverage
+[sonar-link]:                https://sonarcloud.io/summary/new_code?id=phalcon_talon
+[pds-skeleton-badge]:        https://img.shields.io/badge/pds-skeleton-blue.svg?style=flat-square
+[pds-skeleton-link]:         https://github.com/php-pds/skeleton
+[discord-badge]:             https://img.shields.io/discord/310910488152375297?label=Discord&logo=discord&style=flat-square
+[discord-link]:              https://phalcon.io/discord
+[contributors-badge]:        https://img.shields.io/github/contributors/phalcon/talon?style=flat-square&logo=github&logoColor=white
+[contributors-link]:         https://github.com/phalcon/talon/graphs/contributors
+[oc-backers-badge]:          https://img.shields.io/opencollective/backers/phalcon?style=flat-square&logo=opencollective&logoColor=white
+[oc-backers-link]:           https://opencollective.com/phalcon
+[oc-sponsors-badge]:         https://img.shields.io/opencollective/sponsors/phalcon?style=flat-square&logo=opencollective&logoColor=white
+[oc-sponsors-link]:          https://opencollective.com/phalcon

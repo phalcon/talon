@@ -17,6 +17,8 @@ use Phalcon\Talon\Traits\FileSystemTrait;
 use PHPUnit\Framework\TestCase;
 
 use function file_put_contents;
+use function mkdir;
+use function uniqid;
 
 final class FileSystemTraitTest extends TestCase
 {
@@ -26,6 +28,25 @@ final class FileSystemTraitTest extends TestCase
     {
         $this->assertSame('/app/', $this->getDirSeparator('/app'));
         $this->assertStringEndsWith('.log', $this->getNewFileName('pre'));
+    }
+
+    public function testSafeDeleteDirectoryIgnoresMissing(): void
+    {
+        $this->safeDeleteDirectory(__DIR__ . '/../_output/missing-' . uniqid());
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testSafeDeleteDirectoryRemovesRecursively(): void
+    {
+        $dir = __DIR__ . '/../_output/tree-' . uniqid();
+        mkdir($dir . '/nested', 0o777, true);
+        file_put_contents($dir . '/a.txt', 'x');
+        file_put_contents($dir . '/nested/b.txt', 'y');
+
+        $this->safeDeleteDirectory($dir);
+
+        $this->assertDirectoryDoesNotExist($dir);
     }
 
     public function testSafeDeleteFileAndContentsAssert(): void

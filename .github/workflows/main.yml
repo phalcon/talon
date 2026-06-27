@@ -1,4 +1,4 @@
-name: tests
+name: Phalcon Talon CI
 
 on: [push, pull_request]
 
@@ -9,10 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         php: ['8.1', '8.2', '8.3', '8.4', '8.5']
-        variant: ['v5']
-        include:
-          - php: '8.5'
-            variant: 'v6'
+        variant: ['v5', 'v6']
     name: PHP ${{ matrix.php }} / Phalcon ${{ matrix.variant }}
     steps:
       - uses: actions/checkout@v4
@@ -34,8 +31,45 @@ jobs:
           docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.pgsql.xml
         continue-on-error: ${{ matrix.variant == 'v6' }}
 
+      # Runtime-independent: run once on a single (v5) cell rather than all ten.
       - name: Static analysis, coding standard, layout
         if: matrix.variant == 'v5' && matrix.php == '8.3'
         run: |
           docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer analyze
           docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer cs
+          docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer cs-fixer
+
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build image
+        run: |
+          cp resources/.env.example .env
+          sed -i "s/^UID=.*/UID=$(id -u)/" .env
+          sed -i "s/^GID=.*/GID=$(id -g)/" .env
+          docker compose build app
+
+      - name: Tests with coverage
+        run: docker compose run --rm app composer test-coverage
+
+      - name: Map container paths to the workspace
+        run: sed -i "s#/srv#${GITHUB_WORKSPACE}#g" tests/_output/coverage.xml
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=phalcon
+            -Dsonar.projectKey=phalcon_talon
+            -Dsonar.sources=src
+            -Dsonar.tests=tests
+            -Dsonar.exclusions=resources/**,bin/**
+            -Dsonar.php.coverage.reportPaths=tests/_output/coverage.xml

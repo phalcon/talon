@@ -54,7 +54,7 @@ final class StatementSplitter
 
             // Inside an unbalanced pgsql dollar-quoted block: keep accumulating.
             if (
-                preg_match_all('/\$[A-Za-z0-9_]*\$/', $query, $matches)
+                preg_match_all('/\$\w*\$/', $query, $matches)
                 && count($matches[0]) % 2 !== 0
             ) {
                 continue;

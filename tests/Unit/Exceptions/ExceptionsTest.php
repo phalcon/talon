@@ -15,6 +15,10 @@ namespace Phalcon\Talon\Tests\Unit\Exceptions;
 
 use Phalcon\Talon\Contracts\Throwable as TalonThrowable;
 use Phalcon\Talon\Exceptions\Exception;
+use Phalcon\Talon\Exceptions\InvalidApplication;
+use Phalcon\Talon\Exceptions\MissingService;
+use Phalcon\Talon\Exceptions\PhalconNotAvailable;
+use Phalcon\Talon\Exceptions\ResponseNotDispatched;
 use Phalcon\Talon\Exceptions\UnknownDriver;
 use PHPUnit\Framework\TestCase;
 
@@ -32,5 +36,13 @@ final class ExceptionsTest extends TestCase
         $this->assertInstanceOf(Exception::class, $e);
         $this->assertInstanceOf(TalonThrowable::class, $e);
         $this->assertStringContainsString('oracle', $e->getMessage());
+    }
+
+    public function testRemainingGranularExceptionsCarryMessages(): void
+    {
+        $this->assertStringContainsString('handle', (new InvalidApplication('stdClass'))->getMessage());
+        $this->assertStringContainsString('dispatcher', (new MissingService('dispatcher'))->getMessage());
+        $this->assertStringContainsString('dispatch', (new ResponseNotDispatched())->getMessage());
+        $this->assertStringContainsString('Phalcon', (new PhalconNotAvailable())->getMessage());
     }
 }

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Wait for services only when they are part of the run
-if [ "${TALON_WAIT_FOR_DB:-1}" = "1" ]; then
+if [[ "${TALON_WAIT_FOR_DB:-1}" == "1" ]]; then
     bash bin/wait-for-db || true
 fi
 

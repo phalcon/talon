@@ -31,7 +31,8 @@ use function sprintf;
 
 final class Settings implements SettingsContract
 {
-    private const DRIVERS = ['mysql', 'pgsql', 'sqlite'];
+    private const DEFAULT_HOST = '127.0.0.1';
+    private const DRIVERS      = ['mysql', 'pgsql', 'sqlite'];
 
     /**
      * @param array<string, array<string, mixed>> $db
@@ -91,7 +92,7 @@ final class Settings implements SettingsContract
             $root,
             [
                 'mysql' => [
-                    'host'     => $env('DATA_MYSQL_HOST', '127.0.0.1'),
+                    'host'     => $env('DATA_MYSQL_HOST', self::DEFAULT_HOST),
                     'port'     => (int) $env('DATA_MYSQL_PORT', '3306'),
                     'dbname'   => $env('DATA_MYSQL_NAME', 'talon'),
                     'username' => $env('DATA_MYSQL_USER', 'root'),
@@ -99,7 +100,7 @@ final class Settings implements SettingsContract
                     'charset'  => $env('DATA_MYSQL_CHARSET', 'utf8mb4'),
                 ],
                 'pgsql' => [
-                    'host'     => $env('DATA_POSTGRES_HOST', '127.0.0.1'),
+                    'host'     => $env('DATA_POSTGRES_HOST', self::DEFAULT_HOST),
                     'port'     => (int) $env('DATA_POSTGRES_PORT', '5432'),
                     'dbname'   => $env('DATA_POSTGRES_NAME', 'talon'),
                     'username' => $env('DATA_POSTGRES_USER', 'postgres'),
@@ -110,12 +111,12 @@ final class Settings implements SettingsContract
                 ],
             ],
             [
-                'host'  => $env('DATA_REDIS_HOST', '127.0.0.1'),
+                'host'  => $env('DATA_REDIS_HOST', self::DEFAULT_HOST),
                 'port'  => (int) $env('DATA_REDIS_PORT', '6379'),
                 'index' => (int) $env('DATA_REDIS_NAME', '0'),
             ],
             [
-                'host'   => $env('DATA_MEMCACHED_HOST', '127.0.0.1'),
+                'host'   => $env('DATA_MEMCACHED_HOST', self::DEFAULT_HOST),
                 'port'   => (int) $env('DATA_MEMCACHED_PORT', '11211'),
                 'weight' => (int) $env('DATA_MEMCACHED_WEIGHT', '0'),
             ],
@@ -202,7 +203,11 @@ final class Settings implements SettingsContract
     {
         $root = rtrim($this->root, '/');
 
-        return $relative === '' ? $root : $root . '/' . ltrim($relative, '/');
+        if ($relative === '') {
+            return $root === '' ? '/' : $root;
+        }
+
+        return $root . '/' . ltrim($relative, '/');
     }
 
     public function supportPath(string $relative = ''): string

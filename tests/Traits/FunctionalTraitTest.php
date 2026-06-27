@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Traits;
 
+use Phalcon\Talon\Exceptions\ResponseNotDispatched;
 use Phalcon\Talon\Traits\FunctionalTrait;
 use PHPUnit\Framework\TestCase;
 
@@ -32,5 +33,50 @@ final class FunctionalTraitTest extends TestCase
         $this->assertController('test');
         $this->assertAction('hello');
         $this->assertResponseContentContains('Nikos');
+        $this->assertStringContainsString('Nikos', $this->getContent());
+    }
+
+    public function testAssertHeader(): void
+    {
+        $this->dispatch('/test/header');
+
+        $this->assertHeader(['X-Talon' => 'yes']);
+    }
+
+    public function testAssertResponseCode(): void
+    {
+        $this->dispatch('/test/status');
+
+        $this->assertResponseCode(404);
+        $this->assertResponseCode('404');
+    }
+
+    public function testAssertRedirectTo(): void
+    {
+        $this->dispatch('/test/redirect');
+
+        $this->assertRedirectTo('/target');
+    }
+
+    public function testAssertDispatchIsForwarded(): void
+    {
+        $this->dispatch('/test/forward');
+
+        $this->assertDispatchIsForwarded();
+        $this->assertAction('empty');
+    }
+
+    public function testAssertionBeforeDispatchThrows(): void
+    {
+        $this->expectException(ResponseNotDispatched::class);
+
+        $this->assertController('test');
+    }
+
+    public function testGetContentBeforeDispatchThrows(): void
+    {
+        $this->expectException(ResponseNotDispatched::class);
+
+        $this->getContent();
     }
 }

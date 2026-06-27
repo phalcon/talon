@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Traits;
 
 use Phalcon\Di\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
 use Phalcon\Http\ResponseInterface;
-use Phalcon\Mvc\Application;
 use Phalcon\Mvc\Dispatcher;
 use Phalcon\Talon\Exceptions\InvalidApplication;
 use Phalcon\Talon\Exceptions\MissingService;
@@ -34,7 +34,7 @@ trait FunctionalTrait
 {
     protected bool $resetSuperglobals = false;
 
-    private ?Application $application = null;
+    private ?object $application = null;
 
     private mixed $response = null;
 
@@ -96,7 +96,6 @@ trait FunctionalTrait
             throw new InvalidApplication(get_debug_type($app));
         }
 
-        /** @var Application $app */
         $this->application = $app;
         $this->response    = $app->handle($url);
     }
@@ -108,7 +107,7 @@ trait FunctionalTrait
 
     private function di(): DiInterface
     {
-        if ($this->application === null) {
+        if (!$this->application instanceof InjectionAwareInterface) {
             throw new ResponseNotDispatched();
         }
 

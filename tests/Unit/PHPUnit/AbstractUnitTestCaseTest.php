@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Tests\Unit\PHPUnit;
 
 use Phalcon\Talon\PHPUnit\AbstractUnitTestCase;
+use PHPUnit\Framework\SkippedTestSuiteError;
 
 final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
 {
@@ -23,5 +24,22 @@ final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
 
         $this->checkPhalconAvailable();
         $this->addToAssertionCount(1);
+    }
+
+    public function testCheckExtensionIsLoadedPassesForLoadedExtension(): void
+    {
+        $this->checkExtensionIsLoaded('json');
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testCheckExtensionIsLoadedThrowsForMissingExtension(): void
+    {
+        try {
+            $this->checkExtensionIsLoaded('a_missing_extension');
+            $this->fail('Expected a SkippedTestSuiteError');
+        } catch (SkippedTestSuiteError $exception) {
+            $this->assertStringContainsString('not loaded', $exception->getMessage());
+        }
     }
 }

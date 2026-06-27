@@ -38,10 +38,13 @@ abstract class AbstractUnitTestCase extends TestCase
 
     public function checkPhalconAvailable(): void
     {
+        // @codeCoverageIgnoreStart
+        // Unreachable here: the suite itself requires Phalcon, so it is always available.
         if (!Environment::phalconAvailable()) {
             throw new SkippedTestSuiteError(
                 'Phalcon is not available (ext-phalcon or phalcon/phalcon). Skipping test'
             );
         }
+        // @codeCoverageIgnoreEnd
     }
 }

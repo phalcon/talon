@@ -42,4 +42,11 @@ final class StatementSplitterTest extends TestCase
     {
         $this->assertSame(['SELECT 1'], StatementSplitter::split('SELECT 1'));
     }
+
+    public function testHandlesDelimiterChange(): void
+    {
+        $sql = "DELIMITER ;;\nCREATE A;;\nDELIMITER ;\nSELECT 1;\n";
+
+        $this->assertSame(['CREATE A', 'SELECT 1'], StatementSplitter::split($sql));
+    }
 }

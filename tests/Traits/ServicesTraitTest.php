@@ -18,13 +18,15 @@ use Phalcon\Talon\Talon;
 use Phalcon\Talon\Traits\ServicesTrait;
 use PHPUnit\Framework\TestCase;
 
+use function uniqid;
+
 final class ServicesTraitTest extends TestCase
 {
     use ServicesTrait;
 
     protected function setUp(): void
     {
-        Talon::useSettings(Settings::fromEnv(['root' => '/app']));
+        Talon::useSettings(Settings::fromEnv());
     }
 
     protected function tearDown(): void
@@ -48,5 +50,18 @@ final class ServicesTraitTest extends TestCase
 
         $this->assertTrue($this->hasMemcachedKey('talon_test'));
         $this->assertSame('value', $this->getMemcachedKey('talon_test'));
+    }
+
+    public function testDoesNotHaveKeys(): void
+    {
+        $this->assertTrue($this->doesNotHaveRedisKey('talon:absent:' . uniqid()));
+        $this->assertTrue($this->doesNotHaveMemcachedKey('talon_absent_' . uniqid()));
+    }
+
+    public function testSendRedisCommand(): void
+    {
+        $this->sendRedisCommand('set', 'talon:cmd', 'sent');
+
+        $this->assertSame('sent', $this->sendRedisCommand('get', 'talon:cmd'));
     }
 }
