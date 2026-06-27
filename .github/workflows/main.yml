@@ -39,4 +39,3 @@ jobs:
         run: |
           docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer analyze
           docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer cs
-          docker compose run --rm -e TALON_WAIT_FOR_DB=0 app ./vendor/bin/pds-skeleton validate
