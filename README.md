@@ -1,5 +1,18 @@
 # Phalcon Talon
 
+[![Latest Version][packagist-version-badge]][packagist-version-link]
+[![PHP Version][php-version-badge]][packagist-version-link]
+[![Total Downloads][packagist-downloads-badge]][packagist-downloads-link]
+[![License][license-badge]][license-link]
+
+[![Talon CI][talon-ci-badge]][talon-ci-link]
+[![PDS Skeleton][pds-skeleton-badge]][pds-skeleton-link]
+
+[![Discord][discord-badge]][discord-link]
+[![Contributors][contributors-badge]][contributors-link]
+[![OpenCollective Backers][oc-backers-badge]][oc-backers-link]
+[![OpenCollective Sponsors][oc-sponsors-badge]][oc-sponsors-link]
+
 Test harness and Phalcon bootstrapping for PHPUnit and beyond — the part of Phalcon that
 catches the bugs.
 
@@ -161,3 +174,25 @@ Codeception adapters are planned for a future release.
 ## License
 
 BSD-3-Clause. See [LICENSE](LICENSE).
+
+<!-- Badges -->
+<!-- SonarQube badges intentionally omitted until the project is added to SonarCloud. -->
+[packagist-version-badge]:   https://img.shields.io/packagist/v/phalcon/talon?include_prereleases&style=flat-square&logo=packagist&logoColor=white
+[packagist-version-link]:    https://packagist.org/packages/phalcon/talon
+[packagist-downloads-badge]: https://img.shields.io/packagist/dt/phalcon/talon?style=flat-square&logo=packagist&logoColor=white
+[packagist-downloads-link]:  https://packagist.org/packages/phalcon/talon/stats
+[php-version-badge]:          https://img.shields.io/packagist/php-v/phalcon/talon?style=flat-square&logo=php&logoColor=white
+[license-badge]:             https://img.shields.io/github/license/phalcon/talon?style=flat-square&logo=opensourceinitiative&logoColor=white
+[license-link]:              https://github.com/phalcon/talon/blob/master/LICENSE
+[talon-ci-badge]:            https://github.com/phalcon/talon/actions/workflows/main.yml/badge.svg?branch=master
+[talon-ci-link]:             https://github.com/phalcon/talon/actions/workflows/main.yml
+[pds-skeleton-badge]:        https://img.shields.io/badge/pds-skeleton-blue.svg?style=flat-square
+[pds-skeleton-link]:         https://github.com/php-pds/skeleton
+[discord-badge]:             https://img.shields.io/discord/310910488152375297?label=Discord&logo=discord&style=flat-square
+[discord-link]:              https://phalcon.io/discord
+[contributors-badge]:        https://img.shields.io/github/contributors/phalcon/talon?style=flat-square&logo=github&logoColor=white
+[contributors-link]:         https://github.com/phalcon/talon/graphs/contributors
+[oc-backers-badge]:          https://img.shields.io/opencollective/backers/phalcon?style=flat-square&logo=opencollective&logoColor=white
+[oc-backers-link]:           https://opencollective.com/phalcon
+[oc-sponsors-badge]:         https://img.shields.io/opencollective/sponsors/phalcon?style=flat-square&logo=opencollective&logoColor=white
+[oc-sponsors-link]:          https://opencollective.com/phalcon
