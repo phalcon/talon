@@ -20,6 +20,8 @@ jobs:
       - name: Build image
         run: |
           cp resources/.env.example .env
+          sed -i "s/^UID=.*/UID=$(id -u)/" .env
+          sed -i "s/^GID=.*/GID=$(id -g)/" .env
           PHP_VERSION=${{ matrix.php }} PHALCON_VARIANT=${{ matrix.variant }} docker compose build app
 
       - name: Unit + sqlite

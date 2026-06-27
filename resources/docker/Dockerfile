@@ -53,9 +53,9 @@ COPY --chown=${UID}:${GID} resources/docker/.bashrc /home/${USER}/.bashrc
 ENV HOME=/home/${USER} \
     COMPOSER_HOME=/home/${USER}/.composer
 
-RUN install -d -m 0775 -o "${USER}" -g "${GROUP}" /app
-WORKDIR /app
-COPY --chown=${UID}:${GID} . /app
+RUN install -d -m 0775 -o "${USER}" -g "${GROUP}" /srv
+WORKDIR /srv
+COPY --chown=${UID}:${GID} . /srv
 USER ${USER}
 
 # v5: extension provides Phalcon (phalcon/phalcon stays dormant if present).
