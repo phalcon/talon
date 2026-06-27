@@ -55,7 +55,7 @@ use Phalcon\Talon\Settings;
 
 Runner::for(Settings::fromArray(['root' => __DIR__ . '/..']))
     ->before(Stage::Environment, fn () => ini_set('memory_limit', '512M'))
-    ->after(Stage::Directories, fn ($settings) => mkdir($settings->path('tests/_output/screens'), 0777, true))
+    ->after(Stage::Directories, fn ($settings) => mkdir($settings->outputPath('screens'), 0777, true))
     ->boot();
 ```
 

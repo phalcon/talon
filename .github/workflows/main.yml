@@ -1,4 +1,4 @@
-name: tests
+name: Phalcon Talon CI
 
 on: [push, pull_request]
 
@@ -71,4 +71,5 @@ jobs:
             -Dsonar.projectKey=phalcon_talon
             -Dsonar.sources=src
             -Dsonar.tests=tests
+            -Dsonar.exclusions=resources/**,bin/**
             -Dsonar.php.coverage.reportPaths=tests/_output/coverage.xml
