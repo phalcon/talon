@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Wait for MySQL
+until mysqladmin ping -h "${DATA_MYSQL_HOST:-mysql}" -P "${DATA_MYSQL_PORT:-3306}" --silent 2>/dev/null; do
+    echo "waiting for mysql..."
+    sleep 2
+done
+
+# Wait for PostgreSQL
+until pg_isready -h "${DATA_POSTGRES_HOST:-pgsql}" -p "${DATA_POSTGRES_PORT:-5432}" >/dev/null 2>&1; do
+    echo "waiting for pgsql..."
+    sleep 2
+done
+
+echo "databases are ready"
