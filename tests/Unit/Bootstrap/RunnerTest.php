@@ -30,10 +30,14 @@ final class RunnerTest extends TestCase
 
     public function testRunsStagesInOrderWithHooks(): void
     {
+        /** @var ArrayObject<int, string> $order */
         $order    = new ArrayObject();
         $settings = Settings::fromArray(['root' => '/app']);
 
         $runner = new class ($settings, $order) extends Runner {
+            /**
+             * @param ArrayObject<int, string> $order
+             */
             public function __construct(Settings $settings, private ArrayObject $order)
             {
                 parent::__construct($settings);
