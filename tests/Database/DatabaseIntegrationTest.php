@@ -29,11 +29,11 @@ final class DatabaseIntegrationTest extends AbstractDatabaseTestCase
     {
         parent::setUp();
 
-        Talon::useSettings(Settings::fromEnv(['root' => '/app']));
+        Talon::useSettings(Settings::fromEnv());
         self::resetConnections();
 
         $driver = getenv('driver') ?: 'sqlite';
-        $this->getConnection()->loadSchema('/app/resources/schema/' . $driver . '.sql');
+        $this->getConnection()->loadSchema($this->getSettings()->rootPath('resources/schema/' . $driver . '.sql'));
         $this->getConnection()->execute("INSERT INTO users (id, email) VALUES (1, 'nikos@niden.net')");
     }
 

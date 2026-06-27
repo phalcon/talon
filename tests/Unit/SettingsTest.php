@@ -26,8 +26,40 @@ final class SettingsTest extends TestCase
         $settings = Settings::fromArray(['root' => '/app']);
 
         $this->assertInstanceOf(SettingsContract::class, $settings);
-        $this->assertSame('/app', $settings->path());
-        $this->assertSame('/app/tests/_output', $settings->path('tests/_output'));
+        $this->assertSame('/app', $settings->rootPath());
+        $this->assertSame('/app/sub/file.txt', $settings->rootPath('sub/file.txt'));
+    }
+
+    public function testDirectoryAccessorsUseDefaults(): void
+    {
+        $settings = Settings::fromArray(['root' => '/app']);
+
+        $this->assertSame('/app/tests', $settings->testsPath());
+        $this->assertSame('/app/tests/_data', $settings->dataPath());
+        $this->assertSame('/app/tests/_output', $settings->outputPath());
+        $this->assertSame('/app/tests/_output/cache', $settings->cachePath());
+        $this->assertSame('/app/tests/_output/logs', $settings->logsPath());
+        $this->assertSame('/app/tests/support', $settings->supportPath());
+        $this->assertSame('/app/tests/_output/run.log', $settings->outputPath('run.log'));
+    }
+
+    public function testDirectoryAccessorsHonorOverrides(): void
+    {
+        $settings = Settings::fromArray([
+            'root'  => '/app',
+            'paths' => ['output' => 'build/out'],
+        ]);
+
+        $this->assertSame('/app/build/out', $settings->outputPath());
+        $this->assertSame('/app/tests/_data', $settings->dataPath());
+    }
+
+    public function testFromEnvDiscoversRootFromComposerJson(): void
+    {
+        // The package ships a composer.json at its root; discovery must find it.
+        $settings = Settings::fromEnv();
+
+        $this->assertFileExists($settings->rootPath('composer.json'));
     }
 
     public function testFromArrayRequiresRoot(): void

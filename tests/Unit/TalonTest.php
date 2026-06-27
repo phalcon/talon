@@ -42,7 +42,7 @@ final class TalonTest extends TestCase
 
     public function testBootReturnsAndRegistersSettings(): void
     {
-        $settings = Settings::fromArray(['root' => '/app']);
+        $settings = Settings::fromArray(['root' => dirname(__DIR__, 2)]);
 
         $this->assertSame($settings, Talon::boot($settings));
         $this->assertSame($settings, Talon::settings());

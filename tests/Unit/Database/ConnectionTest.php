@@ -35,7 +35,7 @@ final class ConnectionTest extends TestCase
     public function testLoadSchemaFromFile(): void
     {
         $conn = $this->sqlite();
-        $conn->loadSchema('/app/resources/schema/sqlite.sql');
+        $conn->loadSchema(dirname(__DIR__, 3) . '/resources/schema/sqlite.sql');
         $conn->execute("INSERT INTO users VALUES (2, 'a@b.c')");
 
         $this->assertCount(1, $conn->select('users', ['email' => 'a@b.c']));
