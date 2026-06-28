@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Talon\Tests\Fixtures\App;
+namespace Phalcon\Talon\Tests\Fakes\App;
 
 use Phalcon\Http\ResponseInterface;
 use Phalcon\Mvc\Controller;

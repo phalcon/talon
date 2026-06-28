@@ -19,6 +19,8 @@ use Phalcon\Talon\Contracts\Settings;
 use Phalcon\Talon\Talon;
 use Predis\Client as RedisClient;
 
+use function class_exists;
+use function extension_loaded;
 use function is_scalar;
 
 /**
@@ -78,6 +80,13 @@ trait ServicesTrait
 
     private function memcached(): Memcached
     {
+        if (!extension_loaded('memcached')) {
+            // @codeCoverageIgnoreStart
+            // Reached only when ext-memcached is absent; talon's CI loads it.
+            $this->markTestSkipped('The memcached extension is not loaded');
+            // @codeCoverageIgnoreEnd
+        }
+
         $options = $this->settings()->getMemcachedOptions();
         $host    = isset($options['host']) && is_scalar($options['host']) ? (string) $options['host'] : '127.0.0.1';
         $port    = isset($options['port']) && is_scalar($options['port']) ? (int) $options['port'] : 11211;
@@ -97,6 +106,13 @@ trait ServicesTrait
 
     private function redis(): RedisClient
     {
+        if (!class_exists(RedisClient::class)) {
+            // @codeCoverageIgnoreStart
+            // Reached only when predis/predis is not installed; talon's CI installs it.
+            $this->markTestSkipped('The predis/predis package is not installed');
+            // @codeCoverageIgnoreEnd
+        }
+
         try {
             $client = new RedisClient($this->settings()->getRedisOptions());
             $client->connect();

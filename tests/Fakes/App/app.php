@@ -18,7 +18,7 @@ use Phalcon\Mvc\Dispatcher;
 $di = new FactoryDefault();
 $di->setShared('dispatcher', function () {
     $dispatcher = new Dispatcher();
-    $dispatcher->setDefaultNamespace('Phalcon\\Talon\\Tests\\Fixtures\\App');
+    $dispatcher->setDefaultNamespace('Phalcon\\Talon\\Tests\\Fakes\\App');
 
     return $dispatcher;
 });

@@ -22,8 +22,6 @@ apt-get install -yq --no-install-recommends \
     default-mysql-client postgresql-client \
     libicu-dev libzip-dev libpq-dev libsqlite3-dev libmemcached-dev zlib1g-dev
 docker-php-ext-install intl zip pdo_mysql pdo_pgsql pdo_sqlite
-pecl install redis memcached pcov
-docker-php-ext-enable redis memcached pcov
 apt-get clean -y
 rm -rf /var/lib/apt/lists/*
 EOT
@@ -31,20 +29,24 @@ EOT
 # Composer
 COPY --from=composer/composer:2 /usr/bin/composer /usr/bin/composer
 
-# Phalcon provider: v5 = C extension via PIE (builds from Packagist source, auto-enables);
-# v6 = the phalcon/phalcon composer package (no extension installed).
 RUN <<EOT
 set -eux
+apt-get update -y
+apt-get install -yq --no-install-recommends ${PHPIZE_DEPS} libtool
+curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar -o /usr/local/bin/pie
+chmod +x /usr/local/bin/pie
+# redis/memcached may not have a build yet for the newest PHP (e.g. 8.5); keep the image
+# build resilient - the Services tests skip when the extension/backend is unavailable.
+pie install --no-interaction pecl/redis || echo "skipping redis extension (no build for this PHP version)"
+pie install --no-interaction pecl/memcached || echo "skipping memcached extension (no build for this PHP version)"
+pie install --no-interaction pecl/pcov
+# Phalcon v5 C extension (v5 variant only; v6 uses the phalcon/phalcon composer package)
 if [ "${PHALCON_VARIANT}" = "v5" ]; then
-    apt-get update -y
-    apt-get install -yq --no-install-recommends ${PHPIZE_DEPS}
-    curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar -o /usr/local/bin/pie
-    chmod +x /usr/local/bin/pie
     pie install --no-interaction phalcon/cphalcon:${PHALCON_V5_CONSTRAINT}
     php -m | grep -i phalcon
-    apt-get clean -y
-    rm -rf /var/lib/apt/lists/*
 fi
+apt-get clean -y
+rm -rf /var/lib/apt/lists/*
 EOT
 
 COPY resources/docker/extra.ini /usr/local/etc/php/conf.d/zz-talon.ini

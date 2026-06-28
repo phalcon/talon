@@ -19,7 +19,7 @@ final class AbstractFunctionalTestCaseTest extends AbstractFunctionalTestCase
 {
     protected function appFactory(): callable
     {
-        return static fn () => require __DIR__ . '/../../Fixtures/App/app.php';
+        return static fn () => require __DIR__ . '/../../Fakes/App/app.php';
     }
 
     public function testDispatch(): void

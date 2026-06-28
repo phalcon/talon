@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Tests\Unit\PHPUnit;
 
 use Phalcon\Talon\PHPUnit\AbstractUnitTestCase;
+use Phalcon\Talon\Tests\Fakes\MockSubject;
 use PHPUnit\Framework\SkippedTestSuiteError;
 
 final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
@@ -41,5 +42,54 @@ final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
         } catch (SkippedTestSuiteError $exception) {
             $this->assertStringContainsString('not loaded', $exception->getMessage());
         }
+    }
+
+    public function testMockWithoutConstructorSkipsConstructor(): void
+    {
+        $subject = $this->mockWithoutConstructor(MockSubject::class);
+
+        $this->assertInstanceOf(MockSubject::class, $subject);
+        $this->assertSame('default', $subject->tag);
+        $this->assertFalse($subject->booted);
+    }
+
+    public function testMockWithConstructorRunsConstructor(): void
+    {
+        $subject = $this->mockWithConstructor(MockSubject::class, ['custom']);
+
+        $this->assertInstanceOf(MockSubject::class, $subject);
+        $this->assertSame('custom', $subject->tag);
+        $this->assertTrue($subject->booted);
+    }
+
+    public function testMockWithConstructorStubsMethodsDuringConstruction(): void
+    {
+        $subject = $this->mockWithConstructor(MockSubject::class, ['custom'], ['boot' => null]);
+
+        $this->assertSame('custom', $subject->tag);
+        $this->assertFalse($subject->booted);
+    }
+
+    public function testMockMethodOverrideReturnsValue(): void
+    {
+        $subject = $this->mockWithoutConstructor(MockSubject::class, ['value' => 99]);
+
+        $this->assertSame(99, $subject->value());
+    }
+
+    public function testMockMethodOverrideAcceptsClosure(): void
+    {
+        $subject = $this->mockWithoutConstructor(MockSubject::class, [
+            'greeting' => static fn (): string => 'stubbed',
+        ]);
+
+        $this->assertSame('stubbed', $subject->greeting());
+    }
+
+    public function testMockPropertyOverride(): void
+    {
+        $subject = $this->mockWithoutConstructor(MockSubject::class, ['tag' => 'overridden']);
+
+        $this->assertSame('overridden', $subject->tag);
     }
 }
