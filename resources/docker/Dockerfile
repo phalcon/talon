@@ -35,8 +35,10 @@ apt-get update -y
 apt-get install -yq --no-install-recommends ${PHPIZE_DEPS} libtool
 curl -fsSL https://github.com/php/pie/releases/latest/download/pie.phar -o /usr/local/bin/pie
 chmod +x /usr/local/bin/pie
-pie install --no-interaction pecl/redis
-pie install --no-interaction pecl/memcached
+# redis/memcached may not have a build yet for the newest PHP (e.g. 8.5); keep the image
+# build resilient - the Services tests skip when the extension/backend is unavailable.
+pie install --no-interaction pecl/redis || echo "skipping redis extension (no build for this PHP version)"
+pie install --no-interaction pecl/memcached || echo "skipping memcached extension (no build for this PHP version)"
 pie install --no-interaction pecl/pcov
 # Phalcon v5 C extension (v5 variant only; v6 uses the phalcon/phalcon composer package)
 if [ "${PHALCON_VARIANT}" = "v5" ]; then
