@@ -23,7 +23,7 @@ final class FunctionalTraitTest extends TestCase
 
     protected function appFactory(): callable
     {
-        return static fn () => require __DIR__ . '/../Fixtures/App/app.php';
+        return static fn () => require __DIR__ . '/../Fakes/App/app.php';
     }
 
     public function testDispatchAndAssertControllerAction(): void

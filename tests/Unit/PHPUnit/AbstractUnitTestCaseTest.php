@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Tests\Unit\PHPUnit;
 
 use Phalcon\Talon\PHPUnit\AbstractUnitTestCase;
-use Phalcon\Talon\Tests\Fixtures\MockSubject;
+use Phalcon\Talon\Tests\Fakes\MockSubject;
 use PHPUnit\Framework\SkippedTestSuiteError;
 
 final class AbstractUnitTestCaseTest extends AbstractUnitTestCase

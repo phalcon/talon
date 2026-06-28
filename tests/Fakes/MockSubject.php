@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Talon\Tests\Fixtures;
+namespace Phalcon\Talon\Tests\Fakes;
 
 class MockSubject
 {

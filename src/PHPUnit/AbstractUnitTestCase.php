@@ -17,14 +17,17 @@ use Closure;
 use Phalcon\Talon\Environment;
 use Phalcon\Talon\Traits\FileSystemTrait;
 use Phalcon\Talon\Traits\ReflectionTrait;
+use PHPUnit\Framework\MockObject\Generator\Generator;
 use PHPUnit\Framework\SkippedTestSuiteError;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Runner\Version;
 use ReflectionClass;
 
 use function array_values;
 use function extension_loaded;
 use function method_exists;
 use function sprintf;
+use function version_compare;
 
 abstract class AbstractUnitTestCase extends TestCase
 {
@@ -123,17 +126,17 @@ abstract class AbstractUnitTestCase extends TestCase
                 ? new $class(...array_values($ctorArgs))
                 : (new ReflectionClass($class))->newInstanceWithoutConstructor();
         } else {
-            $builder = $this->getMockBuilder($class)
-                            ->onlyMethods($methodNames);
-
-            if ($withConstructor) {
-                $builder->enableOriginalConstructor()
-                        ->setConstructorArgs(array_values($ctorArgs));
-            } else {
-                $builder->disableOriginalConstructor();
-            }
-
-            $object = $builder->getMock();
+            // Build the double via the low-level generator as a stub (PHPUnit 12+) or a
+            // configurable mock (< 12). A stub avoids the "mock object without expectations"
+            // notice PHPUnit 12+ raises, while $methodNames keeps the other methods real.
+            $object = (new Generator())->testDouble(
+                $class,
+                version_compare(Version::series(), '12', '<'),
+                $methodNames,
+                array_values($ctorArgs),
+                '',
+                $withConstructor,
+            );
 
             foreach ($methodOverrides as $name => $value) {
                 if ($value instanceof Closure) {

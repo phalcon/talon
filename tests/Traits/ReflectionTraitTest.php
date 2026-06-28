@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Traits;
 
-use Phalcon\Talon\Tests\Fixtures\ReflectionSubject;
+use Phalcon\Talon\Tests\Fakes\ReflectionSubject;
 use Phalcon\Talon\Traits\ReflectionTrait;
 use PHPUnit\Framework\TestCase;
 

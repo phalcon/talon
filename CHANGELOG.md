@@ -6,10 +6,12 @@
 
 ### Added
 
-- `AbstractUnitTestCase::mockWithoutConstructor()` / `mockWithConstructor()` - build PHPUnit
-  mocks with the constructor disabled or invoked (with constructor arguments). Method overrides
-  become stubs (a Closure body, a return value, or `null` for a type-safe default) and property
-  overrides are set via reflection.
+- `AbstractUnitTestCase::mockWithoutConstructor()` / `mockWithConstructor()` - build a test
+  double with the constructor disabled or invoked (with constructor arguments), keeping the
+  non-overridden methods real. Method overrides become stubs (a Closure body, a return value,
+  or `null` for a type-safe default) and property overrides are set via reflection. Built as a
+  stub on PHPUnit 12+ (so no "mock object without expectations" notice is raised); works across
+  PHPUnit 10.5-13.
 
 ### Fixed
 
