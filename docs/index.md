@@ -522,13 +522,21 @@ composer cs-fixer-fix         # php-cs-fixer (apply)
 ### Dockerized environments
 
 The repository ships containers under `resources/docker/` and a root `docker-compose.yml`
-that run the suite across the support matrix without local infrastructure:
+that run the suite across the support matrix without local infrastructure. See
+[`CONTRIBUTING.md`](../CONTRIBUTING.md) for the full local-development guide; the essentials:
 
 ```bash
 cp resources/.env.example .env
+sed -i "s/^UID=.*/UID=$(id -u)/;s/^GID=.*/GID=$(id -g)/" .env   # match your host user
+
+# one-off commands
 docker compose run --rm app composer test                              # unit + sqlite
 docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.mysql.xml
 docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.pgsql.xml
+
+# or work inside a long-lived container
+docker compose up -d
+docker compose exec app composer test
 ```
 
 The image's PHP version and Phalcon provider are build arguments: `PHP_VERSION`
@@ -552,8 +560,8 @@ Read by `Settings::fromEnv()` (and the per-driver PHPUnit configs):
 | `DATA_MEMCACHED_HOST` / `_PORT` / `_WEIGHT` | 127.0.0.1 / 11211 / 0 | Memcached connection |
 
 Docker-only variables (`docker-compose.yml`): `PROJECT_PREFIX`, `PHP_VERSION`,
-`PHALCON_VARIANT`, `UID`, `GID`, and `TALON_WAIT_FOR_DB` (set to `0` to skip the
-wait-for-database step in the entrypoint).
+`PHALCON_VARIANT`, `UID`, and `GID`. The backing services are gated by Compose
+`depends_on: service_healthy`, so the app container starts once the databases are ready.
 
 ---
 

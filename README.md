@@ -205,6 +205,20 @@ The traits are the core public API and carry no PHPUnit base-class requirement f
 non-assertion helpers, so Pest (`uses(...)`) and other runners can consume them too. Pest and
 Codeception adapters are planned for a future release.
 
+## Contributing
+
+Talon is developed entirely in Docker - see **[CONTRIBUTING.md](CONTRIBUTING.md)** for the
+full local-development guide. The short version:
+
+```bash
+cp resources/.env.example .env
+sed -i "s/^UID=.*/UID=$(id -u)/;s/^GID=.*/GID=$(id -g)/" .env
+
+docker compose run --rm app composer test           # one-off
+# or work inside the container:
+docker compose up -d && docker compose exec app bash
+```
+
 ## License
 
 BSD-3-Clause. See [LICENSE](LICENSE).
