@@ -70,5 +70,6 @@ if [ "${PHALCON_VARIANT}" = "v6" ]; then
 fi
 EOT
 
-ENTRYPOINT ["bash", "bin/docker-entrypoint.sh"]
-CMD ["bash"]
+# Keepalive so `docker compose up -d` holds the container open for `exec`;
+# `docker compose run --rm app <cmd>` still overrides this for one-off commands.
+CMD ["sleep", "infinity"]
