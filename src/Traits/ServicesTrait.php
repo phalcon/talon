@@ -79,53 +79,63 @@ trait ServicesTrait
         $this->redis()->set($key, $value);
     }
 
-    private function memcached(): Memcached
+    protected function createMemcachedClient(): Memcached
     {
-        if (!extension_loaded('memcached')) {
-            // @codeCoverageIgnoreStart
-            // Reached only when ext-memcached is absent; talon's CI loads it.
-            $this->markTestSkipped('The memcached extension is not loaded');
-            // @codeCoverageIgnoreEnd
-        }
-
         $options = $this->settings()->getMemcachedOptions();
         $host    = isset($options['host']) && is_scalar($options['host']) ? (string) $options['host'] : '127.0.0.1';
         $port    = isset($options['port']) && is_scalar($options['port']) ? (int) $options['port'] : 11211;
 
-        $adapter = new Memcached();
-        $adapter->addServer($host, $port);
+        $client = new Memcached();
+        $client->addServer($host, $port);
 
-        $stats = $adapter->getStats();
-        if (false === $stats || [] === array_filter($stats)) {
-            // @codeCoverageIgnoreStart
-            // Only reached when Memcached is unreachable; the suite needs it up.
-            $this->markTestSkipped('Memcached is not reachable');
-            // @codeCoverageIgnoreEnd
+        return $client;
+    }
+
+    protected function createRedisClient(): RedisClient
+    {
+        return new RedisClient($this->settings()->getRedisOptions());
+    }
+
+    protected function memcachedAvailable(): bool
+    {
+        return extension_loaded('memcached');
+    }
+
+    protected function redisAvailable(): bool
+    {
+        return class_exists(RedisClient::class);
+    }
+
+    private function memcached(): Memcached
+    {
+        if (!$this->memcachedAvailable()) {
+            $this->markTestSkipped('The memcached extension is not loaded');
         }
 
-        return $adapter;
+        $client = $this->createMemcachedClient();
+
+        $stats = $client->getStats();
+        if (false === $stats || [] === array_filter($stats)) {
+            $this->markTestSkipped('Memcached is not reachable');
+        }
+
+        return $client;
     }
 
     private function redis(): RedisClient
     {
-        if (!class_exists(RedisClient::class)) {
-            // @codeCoverageIgnoreStart
-            // Reached only when predis/predis is not installed; talon's CI installs it.
+        if (!$this->redisAvailable()) {
             $this->markTestSkipped('The predis/predis package is not installed');
-            // @codeCoverageIgnoreEnd
         }
 
         try {
-            $client = new RedisClient($this->settings()->getRedisOptions());
+            $client = $this->createRedisClient();
             $client->connect();
 
             return $client;
-            // @codeCoverageIgnoreStart
-            // Only reached when Redis is unreachable; the suite needs it up.
         } catch (Exception $exception) {
             $this->markTestSkipped('Redis is not reachable: ' . $exception->getMessage());
         }
-        // @codeCoverageIgnoreEnd
     }
 
     private function settings(): Settings
