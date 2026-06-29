@@ -38,7 +38,9 @@ chmod +x /usr/local/bin/pie
 # redis/memcached may not have a build yet for the newest PHP (e.g. 8.5); keep the image
 # build resilient - the Services tests skip when the extension/backend is unavailable.
 pie install --no-interaction pecl/redis || echo "skipping redis extension (no build for this PHP version)"
-pie install --no-interaction pecl/memcached || echo "skipping memcached extension (no build for this PHP version)"
+# memcached is not PIE-installable; build it via pecl (deps: libmemcached-dev, libsasl2-dev,
+# PHPIZE_DEPS - all present above). Resilient: newest PHP (e.g. 8.5) may lack a build yet.
+(yes '' | pecl install memcached && docker-php-ext-enable memcached) || echo "skipping memcached extension (no build for this PHP version)"
 pie install --no-interaction pecl/pcov
 # Phalcon v5 C extension (v5 variant only; v6 uses the phalcon/phalcon composer package)
 if [ "${PHALCON_VARIANT}" = "v5" ]; then
@@ -57,18 +59,12 @@ ENV HOME=/home/${USER} \
 
 RUN install -d -m 0775 -o "${USER}" -g "${GROUP}" /srv
 WORKDIR /srv
-COPY --chown=${UID}:${GID} . /srv
 USER ${USER}
 
-# v5: extension provides Phalcon (phalcon/phalcon stays dormant if present).
-# v6: install phalcon/phalcon explicitly so Phalcon is available without the ext.
-RUN <<EOT
-set -eux
-composer install --prefer-dist --no-interaction --no-progress
-if [ "${PHALCON_VARIANT}" = "v6" ]; then
-    composer require --dev --no-interaction --no-progress "phalcon/phalcon:^6@dev"
-fi
-EOT
+# No app code or vendor is baked in: the compose bind mount provides /srv at runtime,
+# and `composer install` is run there (writing vendor to the host). For the v6 variant,
+# also run `composer require --dev "phalcon/phalcon:^6@dev"`.
 
-ENTRYPOINT ["bash", "bin/docker-entrypoint.sh"]
-CMD ["bash"]
+# Keepalive so `docker compose up -d` holds the container open for `exec`;
+# `docker compose run --rm app <cmd>` still overrides this for one-off commands.
+CMD ["sleep", "infinity"]

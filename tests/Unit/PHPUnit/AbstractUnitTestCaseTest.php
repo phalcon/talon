@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Unit\PHPUnit;
 
+use Phalcon\Di\Di;
+use Phalcon\Di\FactoryDefault;
 use Phalcon\Talon\PHPUnit\AbstractUnitTestCase;
 use Phalcon\Talon\Tests\Fakes\MockSubject;
 use PHPUnit\Framework\SkippedTestSuiteError;
@@ -91,5 +93,15 @@ final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
         $subject = $this->mockWithoutConstructor(MockSubject::class, ['tag' => 'overridden']);
 
         $this->assertSame('overridden', $subject->tag);
+    }
+
+    public function testSetUpResetsTheDefaultDi(): void
+    {
+        Di::setDefault(new FactoryDefault());
+        $this->assertNotNull(Di::getDefault());
+
+        $this->setUp();
+
+        $this->assertNull(Di::getDefault());
     }
 }

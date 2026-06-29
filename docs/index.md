@@ -29,6 +29,7 @@ integration, and functional tests:
   - [Database](#database-tests)
   - [Services](#service-tests)
   - [Functional](#functional-tests)
+  - [Browser](#browser-tests)
 - [Mocking a resultset](#mocking-a-resultset)
 - [Using the traits directly](#using-the-traits-directly)
 - [Exceptions](#exceptions)
@@ -77,7 +78,7 @@ Traits split into two kinds:
 - **Pure** - `ReflectionTrait` and the file-operation half of `FileSystemTrait`. No PHPUnit
   dependency.
 - **Host-needed** - `DatabaseTrait`, `ServicesTrait`, `ResultSetTrait`, `FunctionalTrait`,
-  and the `assertFileContents*` helpers. They call `$this->assert*()` /
+  `BrowserTrait`, the `*AssertionsTrait` pair, and the `assertFileContents*` helpers. They call `$this->assert*()` /
   `$this->getMockBuilder()`, so they require a PHPUnit-compatible host.
 
 ---
@@ -284,12 +285,12 @@ final class UserTest extends AbstractDatabaseTestCase
     {
         parent::setUp();
         $this->getConnection()->loadSchema($this->getSettings()->rootPath('resources/schema/sqlite.sql'));
-        $this->getConnection()->execute("INSERT INTO users (id, email) VALUES (1, 'nikos@niden.net')");
+        $this->getConnection()->execute("INSERT INTO users (id, email) VALUES (1, 'john.connor@skynet.dev')");
     }
 
     public function testSeeded(): void
     {
-        $this->assertInDatabase('users', ['email' => 'nikos@niden.net']);
+        $this->assertInDatabase('users', ['email' => 'john.connor@skynet.dev']);
         $this->assertNotInDatabase('users', ['id' => 999]);
     }
 }
@@ -364,6 +365,50 @@ final class HomeTest extends AbstractFunctionalTestCase
 
 Set `protected bool $resetSuperglobals = true;` to clear `$_GET`/`$_POST`/… on teardown.
 
+### Browser tests
+
+`AbstractBrowserTestCase` composes `BrowserTrait` (actions) and `BrowserAssertionsTrait`
+(page assertions) for multi-request flows - login, forms, redirects. It drives your app
+**in-process** (no web server) through a `symfony/browser-kit` bridge, so cookies and the
+session persist across requests within a test. You supply the app through `appFactory()`,
+exactly as for functional tests.
+
+```php
+use Phalcon\Talon\PHPUnit\AbstractBrowserTestCase;
+
+final class LoginTest extends AbstractBrowserTestCase
+{
+    protected function appFactory(): callable
+    {
+        return fn () => require __DIR__ . '/../app/bootstrap.php';
+    }
+
+    public function testLogin(): void
+    {
+        $this->visitPage('/session/login');
+        $this->fillField('email', 'sarah.connor@skynet.dev');
+        $this->fillField('password', 'password1');
+        $this->pressButton('Log In');            // submits the form; the CSRF token is carried automatically
+
+        $this->assertPageContainsText('Search users');   // redirect followed, session kept
+    }
+}
+```
+
+| Method | Purpose |
+|--------|---------|
+| `visitPage($url)` | GET a URL |
+| `fillField($name, $value)` | set a form input value |
+| `selectOption($name, $value)` | select a dropdown/radio option |
+| `clickLink($text, $context = null)` | follow an anchor by text, optionally within an XPath context node |
+| `pressButton($labelOrSelector)` | submit a form via its button, by label or XPath |
+| `getCookie($name)` / `setCookie($name, $value)` | read/write the browser cookie jar |
+| `assertPageContainsText($text)` / `assertPageMissingText($text)` | page-text assertions |
+
+Redirects are followed automatically and the session persists across requests, so a login
+in one request authenticates the next. A missing link, button, or form raises
+`Exceptions\ElementNotFound`. The base pulls in `symfony/browser-kit` + `symfony/dom-crawler`.
+
 ---
 
 ## Mocking a resultset
@@ -434,6 +479,7 @@ try {
 | `InvalidApplication` | `appFactory()` returns something without `handle()` |
 | `ResponseNotDispatched` | a response/dispatch assertion runs before `dispatch()` |
 | `MissingService` | the app's DI lacks the `dispatcher` an assertion needs |
+| `ElementNotFound` | a browser `clickLink()`/`pressButton()`/form helper can't find the element |
 | `InvalidResultsetClass` | `mockResultSet()` is given a non-`Resultset` class |
 | `PhalconNotAvailable` | neither Phalcon provider is present (engine layer) |
 
@@ -476,19 +522,31 @@ composer cs-fixer-fix         # php-cs-fixer (apply)
 ### Dockerized environments
 
 The repository ships containers under `resources/docker/` and a root `docker-compose.yml`
-that run the suite across the support matrix without local infrastructure:
+that run the suite across the support matrix without local infrastructure. See
+[`CONTRIBUTING.md`](../CONTRIBUTING.md) for the full local-development guide; the essentials:
 
 ```bash
 cp resources/.env.example .env
+sed -i "s/^UID=.*/UID=$(id -u)/;s/^GID=.*/GID=$(id -g)/" .env   # match your host user
+
+# one-time: install dependencies (writes vendor to your checkout)
+docker compose run --rm app composer install
+
+# one-off commands
 docker compose run --rm app composer test                              # unit + sqlite
 docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.mysql.xml
 docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.pgsql.xml
+
+# or work inside a long-lived container
+docker compose up -d
+docker compose exec app composer test
 ```
 
 The image's PHP version and Phalcon provider are build arguments: `PHP_VERSION`
 (8.1–8.5) and `PHALCON_VARIANT` (`v5` = C extension via PIE, `v6` = the `phalcon/phalcon`
-package). When you switch either value locally, run `docker compose down -v` first so the
-`vendor` volume re-initializes from the rebuilt image.
+package). When you switch either value locally, rebuild and re-install (there are no named
+volumes - dependencies live in your checkout): `docker compose up -d --build`, then
+`docker compose run --rm app composer install`.
 
 ---
 
@@ -506,8 +564,8 @@ Read by `Settings::fromEnv()` (and the per-driver PHPUnit configs):
 | `DATA_MEMCACHED_HOST` / `_PORT` / `_WEIGHT` | 127.0.0.1 / 11211 / 0 | Memcached connection |
 
 Docker-only variables (`docker-compose.yml`): `PROJECT_PREFIX`, `PHP_VERSION`,
-`PHALCON_VARIANT`, `UID`, `GID`, and `TALON_WAIT_FOR_DB` (set to `0` to skip the
-wait-for-database step in the entrypoint).
+`PHALCON_VARIANT`, `UID`, and `GID`. The backing services are gated by Compose
+`depends_on: service_healthy`, so the app container starts once the databases are ready.
 
 ---
 

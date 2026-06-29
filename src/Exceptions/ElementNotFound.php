@@ -11,13 +11,12 @@
 
 declare(strict_types=1);
 
-namespace Phalcon\Talon\PHPUnit;
+namespace Phalcon\Talon\Exceptions;
 
-use Phalcon\Talon\Traits\FunctionalAssertionsTrait;
-use Phalcon\Talon\Traits\FunctionalTrait;
-
-abstract class AbstractFunctionalTestCase extends AbstractUnitTestCase
+class ElementNotFound extends Exception
 {
-    use FunctionalTrait;
-    use FunctionalAssertionsTrait;
+    public function __construct(string $description)
+    {
+        parent::__construct('Could not find ' . $description . ' on the page');
+    }
 }

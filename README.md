@@ -87,7 +87,7 @@ final class UserTest extends AbstractDatabaseTestCase
 {
     public function testSeeded(): void
     {
-        $this->assertInDatabase('users', ['email' => 'nikos@niden.net']);
+        $this->assertInDatabase('users', ['email' => 'john.connor@skynet.dev']);
     }
 }
 ```
@@ -117,6 +117,38 @@ final class HomeTest extends AbstractFunctionalTestCase
     }
 }
 ```
+
+## Browser tests
+
+For multi-request flows - login, forms, redirects - `AbstractBrowserTestCase` drives your
+app **in-process** (no web server) through a `symfony/browser-kit` bridge, keeping cookies
+and the session across requests:
+
+```php
+use Phalcon\Talon\PHPUnit\AbstractBrowserTestCase;
+
+final class LoginTest extends AbstractBrowserTestCase
+{
+    protected function appFactory(): callable
+    {
+        return fn () => require __DIR__ . '/../app/bootstrap.php';
+    }
+
+    public function testLogin(): void
+    {
+        $this->visitPage('/session/login');
+        $this->fillField('email', 'sarah.connor@skynet.dev');
+        $this->fillField('password', 'password1');
+        $this->pressButton('Log In');
+
+        $this->assertPageContainsText('Search users');
+    }
+}
+```
+
+Verbs: `visitPage`, `fillField`, `selectOption`, `clickLink`, `pressButton`,
+`getCookie`/`setCookie`; assertions: `assertPageContainsText` / `assertPageMissingText`.
+Redirects are followed automatically. Needs `symfony/browser-kit` + `symfony/dom-crawler`.
 
 ## Service tests (Redis / Memcached)
 
@@ -172,6 +204,21 @@ Talon::boot(Settings::fromArray([
 The traits are the core public API and carry no PHPUnit base-class requirement for their
 non-assertion helpers, so Pest (`uses(...)`) and other runners can consume them too. Pest and
 Codeception adapters are planned for a future release.
+
+## Contributing
+
+Talon is developed entirely in Docker - see **[CONTRIBUTING.md](CONTRIBUTING.md)** for the
+full local-development guide. The short version:
+
+```bash
+cp resources/.env.example .env
+sed -i "s/^UID=.*/UID=$(id -u)/;s/^GID=.*/GID=$(id -g)/" .env
+
+docker compose run --rm app composer install        # one-time: writes vendor to your checkout
+docker compose run --rm app composer test
+# or work inside the container:
+docker compose up -d && docker compose exec app bash
+```
 
 ## License
 

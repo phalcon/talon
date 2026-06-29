@@ -27,6 +27,6 @@ final class AbstractFunctionalTestCaseTest extends AbstractFunctionalTestCase
         $this->dispatch('/test/hello');
 
         $this->assertController('test');
-        $this->assertResponseContentContains('Nikos');
+        $this->assertResponseContentContains('Operator');
     }
 }

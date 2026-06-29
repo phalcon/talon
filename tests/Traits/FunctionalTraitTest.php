@@ -14,12 +14,14 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Tests\Traits;
 
 use Phalcon\Talon\Exceptions\ResponseNotDispatched;
+use Phalcon\Talon\Traits\FunctionalAssertionsTrait;
 use Phalcon\Talon\Traits\FunctionalTrait;
 use PHPUnit\Framework\TestCase;
 
 final class FunctionalTraitTest extends TestCase
 {
     use FunctionalTrait;
+    use FunctionalAssertionsTrait;
 
     protected function appFactory(): callable
     {
@@ -32,8 +34,8 @@ final class FunctionalTraitTest extends TestCase
 
         $this->assertController('test');
         $this->assertAction('hello');
-        $this->assertResponseContentContains('Nikos');
-        $this->assertStringContainsString('Nikos', $this->getContent());
+        $this->assertResponseContentContains('Operator');
+        $this->assertStringContainsString('Operator', $this->getContent());
     }
 
     public function testAssertHeader(): void

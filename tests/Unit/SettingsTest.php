@@ -80,13 +80,21 @@ final class SettingsTest extends TestCase
 
     public function testMysqlDsnAndOptions(): void
     {
-        $settings = Settings::fromArray([
-            'root' => '/app',
-            'db'   => ['mysql' => [
-                'host' => '127.0.0.1', 'port' => 3306, 'dbname' => 'talon',
-                'username' => 'root', 'password' => 'secret', 'charset' => 'utf8mb4',
-            ]],
-        ]);
+        $settings = Settings::fromArray(
+            [
+                'root' => '/app',
+                'db'   => [
+                    'mysql' => [
+                        'host'     => '127.0.0.1',
+                        'port'     => 3306,
+                        'dbname'   => 'talon',
+                        'username' => 'root',
+                        'password' => 'secret',
+                        'charset'  => 'utf8mb4',
+                    ]
+                ],
+            ]
+        );
 
         $this->assertSame(
             'mysql:host=127.0.0.1;port=3306;dbname=talon;charset=utf8mb4',
@@ -113,10 +121,18 @@ final class SettingsTest extends TestCase
 
     public function testPgsqlDsn(): void
     {
-        $settings = Settings::fromArray([
-            'root' => '/app',
-            'db'   => ['pgsql' => ['host' => '127.0.0.1', 'port' => 5432, 'dbname' => 'talon']],
-        ]);
+        $settings = Settings::fromArray(
+            [
+                'root' => '/app',
+                'db'   => [
+                    'pgsql' => [
+                        'host' => '127.0.0.1',
+                        'port' => 5432,
+                        'dbname' => 'talon'
+                    ]
+                ],
+            ]
+        );
 
         $this->assertSame(
             'pgsql:host=127.0.0.1;port=5432;dbname=talon',

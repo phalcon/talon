@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Talon\PHPUnit;
 
 use Closure;
+use Phalcon\Di\Di;
 use Phalcon\Talon\Environment;
 use Phalcon\Talon\Traits\FileSystemTrait;
 use Phalcon\Talon\Traits\ReflectionTrait;
@@ -34,6 +35,13 @@ abstract class AbstractUnitTestCase extends TestCase
     use ReflectionTrait;
     use FileSystemTrait;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Di::reset();
+    }
+
     public function checkExtensionIsLoaded(string $extension): void
     {
         if (!extension_loaded($extension)) {
@@ -45,14 +53,11 @@ abstract class AbstractUnitTestCase extends TestCase
 
     public function checkPhalconAvailable(): void
     {
-        // @codeCoverageIgnoreStart
-        // Unreachable here: the suite itself requires Phalcon, so it is always available.
-        if (!Environment::phalconAvailable()) {
+        if (!$this->phalconAvailable()) {
             throw new SkippedTestSuiteError(
                 'Phalcon is not available (ext-phalcon or phalcon/phalcon). Skipping test'
             );
         }
-        // @codeCoverageIgnoreEnd
     }
 
     /**
@@ -97,6 +102,11 @@ abstract class AbstractUnitTestCase extends TestCase
         $mock = $this->buildMock($class, $overrides, false, []);
 
         return $mock;
+    }
+
+    protected function phalconAvailable(): bool
+    {
+        return Environment::phalconAvailable();
     }
 
     /**

@@ -9,9 +9,9 @@ services:
         UID: ${UID:-1000}
         GID: ${GID:-1000}
     container_name: ${PROJECT_PREFIX:-talon}-app
+    hostname: ${PROJECT_PREFIX:-talon}-app
     volumes:
       - .:/srv
-      - vendor:/srv/vendor
     env_file: .env
     depends_on:
       mysql:
@@ -34,8 +34,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
-    volumes:
-      - mysqldata:/var/lib/mysql
 
   pgsql:
     image: postgres:16
@@ -49,8 +47,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
-    volumes:
-      - pgsqldata:/var/lib/postgresql/data
 
   redis:
     image: redis:7
@@ -59,8 +55,3 @@ services:
   memcached:
     image: memcached:1.6
     container_name: ${PROJECT_PREFIX:-talon}-memcached
-
-volumes:
-  vendor:
-  mysqldata:
-  pgsqldata:

@@ -2,64 +2,164 @@ name: Phalcon Talon CI
 
 on: [push, pull_request]
 
+env:
+  DATA_MYSQL_HOST: 127.0.0.1
+  DATA_MYSQL_PORT: 3306
+  DATA_MYSQL_USER: root
+  DATA_MYSQL_PASS: secret
+  DATA_MYSQL_NAME: talon
+  DATA_MYSQL_CHARSET: utf8mb4
+  DATA_POSTGRES_HOST: 127.0.0.1
+  DATA_POSTGRES_PORT: 5432
+  DATA_POSTGRES_USER: postgres
+  DATA_POSTGRES_PASS: secret
+  DATA_POSTGRES_NAME: talon
+  DATA_POSTGRES_SCHEMA: public
+  DATA_REDIS_HOST: 127.0.0.1
+  DATA_REDIS_PORT: 6379
+  DATA_REDIS_NAME: 1
+  DATA_MEMCACHED_HOST: 127.0.0.1
+  DATA_MEMCACHED_PORT: 11211
+  DATA_MEMCACHED_WEIGHT: 0
+
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.1', '8.2', '8.3', '8.4', '8.5']
-        variant: ['v5', 'v6']
+        php:
+          - '8.1'
+          - '8.2'
+          - '8.3'
+          - '8.4'
+          - '8.5'
+        variant:
+          - 'v5'
+          - 'v6'
     name: PHP ${{ matrix.php }} / Phalcon ${{ matrix.variant }}
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: talon
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -psecret"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
+      pgsql:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: secret
+          POSTGRES_USER: postgres
+          POSTGRES_DB: talon
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+      memcached:
+        image: memcached:1.6
+        ports:
+          - 11211:11211
     steps:
       - uses: actions/checkout@v7
 
-      - name: Build image
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: "pdo_mysql, pdo_pgsql, pdo_sqlite, sqlite3, intl, zip, memcached${{ matrix.variant == 'v5' && ', phalcon' || '' }}"
+          coverage: pcov
+
+      - name: Install dependencies
         run: |
-          cp resources/.env.example .env
-          sed -i "s/^UID=.*/UID=$(id -u)/" .env
-          sed -i "s/^GID=.*/GID=$(id -g)/" .env
-          PHP_VERSION=${{ matrix.php }} PHALCON_VARIANT=${{ matrix.variant }} docker compose build app
+          composer install --prefer-dist --no-interaction --no-progress
+          if [ "${{ matrix.variant }}" = "v6" ]; then
+            composer require --dev --no-interaction --no-progress "phalcon/phalcon:^6@dev"
+          fi
 
       - name: Unit + sqlite
-        run: docker compose run --rm app composer test
-        continue-on-error: ${{ matrix.variant == 'v6' }}
+        run: composer test
 
       - name: Database drivers
         run: |
-          docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.mysql.xml
-          docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.pgsql.xml
-        continue-on-error: ${{ matrix.variant == 'v6' }}
+          vendor/bin/phpunit -c resources/phpunit.mysql.xml
+          vendor/bin/phpunit -c resources/phpunit.pgsql.xml
 
       # Runtime-independent: run once on a single (v5) cell rather than all ten.
       - name: Static analysis, coding standard, layout
         if: matrix.variant == 'v5' && matrix.php == '8.3'
         run: |
-          docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer analyze
-          docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer cs
-          docker compose run --rm -e TALON_WAIT_FOR_DB=0 app composer cs-fixer
+          composer analyze
+          composer cs
+          composer cs-fixer
 
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: talon
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -psecret"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
+      pgsql:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: secret
+          POSTGRES_USER: postgres
+          POSTGRES_DB: talon
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+      memcached:
+        image: memcached:1.6
+        ports:
+          - 11211:11211
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Build image
-        run: |
-          cp resources/.env.example .env
-          sed -i "s/^UID=.*/UID=$(id -u)/" .env
-          sed -i "s/^GID=.*/GID=$(id -g)/" .env
-          docker compose build app
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, pdo_pgsql, pdo_sqlite, sqlite3, intl, zip, memcached, phalcon
+          coverage: pcov
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Tests with coverage
-        run: docker compose run --rm app composer test-coverage
-
-      - name: Map container paths to the workspace
-        run: sed -i "s#/srv#${GITHUB_WORKSPACE}#g" tests/_output/coverage.xml
+        run: composer test-coverage
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
@@ -71,5 +171,5 @@ jobs:
             -Dsonar.projectKey=phalcon_talon
             -Dsonar.sources=src
             -Dsonar.tests=tests
-            -Dsonar.exclusions=resources/**,bin/**
+            -Dsonar.exclusions=resources/**
             -Dsonar.php.coverage.reportPaths=tests/_output/coverage.xml
