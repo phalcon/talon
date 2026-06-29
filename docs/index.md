@@ -29,6 +29,7 @@ integration, and functional tests:
   - [Database](#database-tests)
   - [Services](#service-tests)
   - [Functional](#functional-tests)
+  - [Browser](#browser-tests)
 - [Mocking a resultset](#mocking-a-resultset)
 - [Using the traits directly](#using-the-traits-directly)
 - [Exceptions](#exceptions)
@@ -77,7 +78,7 @@ Traits split into two kinds:
 - **Pure** - `ReflectionTrait` and the file-operation half of `FileSystemTrait`. No PHPUnit
   dependency.
 - **Host-needed** - `DatabaseTrait`, `ServicesTrait`, `ResultSetTrait`, `FunctionalTrait`,
-  and the `assertFileContents*` helpers. They call `$this->assert*()` /
+  `BrowserTrait`, the `*AssertionsTrait` pair, and the `assertFileContents*` helpers. They call `$this->assert*()` /
   `$this->getMockBuilder()`, so they require a PHPUnit-compatible host.
 
 ---
@@ -364,6 +365,50 @@ final class HomeTest extends AbstractFunctionalTestCase
 
 Set `protected bool $resetSuperglobals = true;` to clear `$_GET`/`$_POST`/… on teardown.
 
+### Browser tests
+
+`AbstractBrowserTestCase` composes `BrowserTrait` (actions) and `BrowserAssertionsTrait`
+(page assertions) for multi-request flows - login, forms, redirects. It drives your app
+**in-process** (no web server) through a `symfony/browser-kit` bridge, so cookies and the
+session persist across requests within a test. You supply the app through `appFactory()`,
+exactly as for functional tests.
+
+```php
+use Phalcon\Talon\PHPUnit\AbstractBrowserTestCase;
+
+final class LoginTest extends AbstractBrowserTestCase
+{
+    protected function appFactory(): callable
+    {
+        return fn () => require __DIR__ . '/../app/bootstrap.php';
+    }
+
+    public function testLogin(): void
+    {
+        $this->visitPage('/session/login');
+        $this->fillField('email', 'sarah.connor@skynet.dev');
+        $this->fillField('password', 'password1');
+        $this->pressButton('Log In');            // submits the form; the CSRF token is carried automatically
+
+        $this->assertPageContainsText('Search users');   // redirect followed, session kept
+    }
+}
+```
+
+| Method | Purpose |
+|--------|---------|
+| `visitPage($url)` | GET a URL |
+| `fillField($name, $value)` | set a form input value |
+| `selectOption($name, $value)` | select a dropdown/radio option |
+| `clickLink($text, $context = null)` | follow an anchor by text, optionally within an XPath context node |
+| `pressButton($labelOrSelector)` | submit a form via its button, by label or XPath |
+| `getCookie($name)` / `setCookie($name, $value)` | read/write the browser cookie jar |
+| `assertPageContainsText($text)` / `assertPageMissingText($text)` | page-text assertions |
+
+Redirects are followed automatically and the session persists across requests, so a login
+in one request authenticates the next. A missing link, button, or form raises
+`Exceptions\ElementNotFound`. The base pulls in `symfony/browser-kit` + `symfony/dom-crawler`.
+
 ---
 
 ## Mocking a resultset
@@ -434,6 +479,7 @@ try {
 | `InvalidApplication` | `appFactory()` returns something without `handle()` |
 | `ResponseNotDispatched` | a response/dispatch assertion runs before `dispatch()` |
 | `MissingService` | the app's DI lacks the `dispatcher` an assertion needs |
+| `ElementNotFound` | a browser `clickLink()`/`pressButton()`/form helper can't find the element |
 | `InvalidResultsetClass` | `mockResultSet()` is given a non-`Resultset` class |
 | `PhalconNotAvailable` | neither Phalcon provider is present (engine layer) |
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- `AbstractUnitTestCase::setUp()` now resets the default Phalcon DI for per-test isolation.
+- The functional base is split into `FunctionalTrait` (actions) and
+  `FunctionalAssertionsTrait` (assertions); the public API is unchanged.
+
+### Added
+
+- `AbstractBrowserTestCase` / `BrowserTrait` / `BrowserAssertionsTrait`: in-process browser
+  testing (navigation, forms, CSRF, redirect-following, session continuity, cookie jar) built
+  on `symfony/browser-kit` + `symfony/dom-crawler`.
+- `Exceptions\ElementNotFound`.
+
 ## [0.2.0](https://github.com/phalcon/talon/releases/tag/v0.2.0) (2026-06-27)
 
 ### Changed

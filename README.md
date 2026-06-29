@@ -118,6 +118,38 @@ final class HomeTest extends AbstractFunctionalTestCase
 }
 ```
 
+## Browser tests
+
+For multi-request flows - login, forms, redirects - `AbstractBrowserTestCase` drives your
+app **in-process** (no web server) through a `symfony/browser-kit` bridge, keeping cookies
+and the session across requests:
+
+```php
+use Phalcon\Talon\PHPUnit\AbstractBrowserTestCase;
+
+final class LoginTest extends AbstractBrowserTestCase
+{
+    protected function appFactory(): callable
+    {
+        return fn () => require __DIR__ . '/../app/bootstrap.php';
+    }
+
+    public function testLogin(): void
+    {
+        $this->visitPage('/session/login');
+        $this->fillField('email', 'sarah.connor@skynet.dev');
+        $this->fillField('password', 'password1');
+        $this->pressButton('Log In');
+
+        $this->assertPageContainsText('Search users');
+    }
+}
+```
+
+Verbs: `visitPage`, `fillField`, `selectOption`, `clickLink`, `pressButton`,
+`getCookie`/`setCookie`; assertions: `assertPageContainsText` / `assertPageMissingText`.
+Redirects are followed automatically. Needs `symfony/browser-kit` + `symfony/dom-crawler`.
+
 ## Service tests (Redis / Memcached)
 
 ```php
