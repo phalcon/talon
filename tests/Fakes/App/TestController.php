@@ -42,7 +42,7 @@ class TestController extends Controller
 
     public function helloAction(): ResponseInterface
     {
-        return $this->response->setContent('Hello Nikos');
+        return $this->response->setContent('Hello Operator');
     }
 
     public function redirectAction(): ResponseInterface

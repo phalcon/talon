@@ -38,7 +38,9 @@ chmod +x /usr/local/bin/pie
 # redis/memcached may not have a build yet for the newest PHP (e.g. 8.5); keep the image
 # build resilient - the Services tests skip when the extension/backend is unavailable.
 pie install --no-interaction pecl/redis || echo "skipping redis extension (no build for this PHP version)"
-pie install --no-interaction pecl/memcached || echo "skipping memcached extension (no build for this PHP version)"
+# memcached is not PIE-installable; build it via pecl (deps: libmemcached-dev, libsasl2-dev,
+# PHPIZE_DEPS - all present above). Resilient: newest PHP (e.g. 8.5) may lack a build yet.
+(yes '' | pecl install memcached && docker-php-ext-enable memcached) || echo "skipping memcached extension (no build for this PHP version)"
 pie install --no-interaction pecl/pcov
 # Phalcon v5 C extension (v5 variant only; v6 uses the phalcon/phalcon composer package)
 if [ "${PHALCON_VARIANT}" = "v5" ]; then

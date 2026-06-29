@@ -87,7 +87,7 @@ final class UserTest extends AbstractDatabaseTestCase
 {
     public function testSeeded(): void
     {
-        $this->assertInDatabase('users', ['email' => 'nikos@niden.net']);
+        $this->assertInDatabase('users', ['email' => 'john.connor@skynet.dev']);
     }
 }
 ```

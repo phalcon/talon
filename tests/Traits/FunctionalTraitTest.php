@@ -34,8 +34,8 @@ final class FunctionalTraitTest extends TestCase
 
         $this->assertController('test');
         $this->assertAction('hello');
-        $this->assertResponseContentContains('Nikos');
-        $this->assertStringContainsString('Nikos', $this->getContent());
+        $this->assertResponseContentContains('Operator');
+        $this->assertStringContainsString('Operator', $this->getContent());
     }
 
     public function testAssertHeader(): void

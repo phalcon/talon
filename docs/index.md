@@ -285,12 +285,12 @@ final class UserTest extends AbstractDatabaseTestCase
     {
         parent::setUp();
         $this->getConnection()->loadSchema($this->getSettings()->rootPath('resources/schema/sqlite.sql'));
-        $this->getConnection()->execute("INSERT INTO users (id, email) VALUES (1, 'nikos@niden.net')");
+        $this->getConnection()->execute("INSERT INTO users (id, email) VALUES (1, 'john.connor@skynet.dev')");
     }
 
     public function testSeeded(): void
     {
-        $this->assertInDatabase('users', ['email' => 'nikos@niden.net']);
+        $this->assertInDatabase('users', ['email' => 'john.connor@skynet.dev']);
         $this->assertNotInDatabase('users', ['id' => 999]);
     }
 }

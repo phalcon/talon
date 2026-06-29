@@ -24,12 +24,12 @@ final class ConnectionTest extends TestCase
     {
         $conn = $this->sqlite();
         $conn->execute('CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT)');
-        $conn->execute("INSERT INTO users VALUES (1, 'nikos@niden.net')");
+        $conn->execute("INSERT INTO users VALUES (1, 'john.connor@skynet.dev')");
 
         $rows = $conn->select('users', ['id' => 1]);
 
         $this->assertCount(1, $rows);
-        $this->assertSame('nikos@niden.net', $rows[0]['email']);
+        $this->assertSame('john.connor@skynet.dev', $rows[0]['email']);
     }
 
     public function testLoadSchemaFromFile(): void

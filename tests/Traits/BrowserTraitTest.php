@@ -70,10 +70,10 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
     public function testPressButtonBySelectorSubmitsTheForm(): void
     {
         $this->visitPage('/browser/form');
-        $this->fillField('name', 'kyle');
+        $this->fillField('name', 'john');
         $this->pressButton('//form/*[@type="submit"]');
 
-        $this->assertPageContainsText('Welcome kyle');
+        $this->assertPageContainsText('Welcome john');
     }
 
     public function testClickLinkByText(): void
