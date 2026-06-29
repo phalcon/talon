@@ -214,7 +214,8 @@ full local-development guide. The short version:
 cp resources/.env.example .env
 sed -i "s/^UID=.*/UID=$(id -u)/;s/^GID=.*/GID=$(id -g)/" .env
 
-docker compose run --rm app composer test           # one-off
+docker compose run --rm app composer install        # one-time: writes vendor to your checkout
+docker compose run --rm app composer test
 # or work inside the container:
 docker compose up -d && docker compose exec app bash
 ```

@@ -12,19 +12,29 @@ cd talon
 cp resources/.env.example .env
 # Match the container user to your host so bind-mounted writes (tests/_output) work:
 sed -i "s/^UID=.*/UID=$(id -u)/;s/^GID=.*/GID=$(id -g)/" .env
+
+# Build the image and install dependencies (vendor is written to your checkout):
+docker compose run --rm app composer install
 ```
 
 The image is built from `resources/docker/Dockerfile`. Two build arguments select the
 runtime (both have defaults in `.env`):
 
 - `PHP_VERSION` - `8.1`–`8.5`.
-- `PHALCON_VARIANT` - `v5` (the C extension via PIE) or `v6` (the `phalcon/phalcon` package).
+- `PHALCON_VARIANT` - `v5` (the Phalcon C extension) or `v6` (the `phalcon/phalcon` package).
 
-When you change either, reset the `vendor` volume so it re-initializes from the rebuilt image:
+For the **v6** variant, also pull in the PHP implementation after installing:
 
 ```bash
-docker compose down -v
+docker compose run --rm app composer require --dev "phalcon/phalcon:^6@dev"
+```
+
+When you change `PHP_VERSION` or `PHALCON_VARIANT`, rebuild and re-install — there are no
+named volumes to reset, dependencies live in your checkout:
+
+```bash
 docker compose up -d --build
+docker compose run --rm app composer install
 ```
 
 ## Running things
@@ -52,8 +62,7 @@ docker compose run --rm app composer test
 docker compose run --rm app composer analyze
 ```
 
-Stop the stack with `docker compose down` (add `-v` to also drop the data and `vendor`
-volumes).
+Stop the stack with `docker compose down`.
 
 ## Commands
 

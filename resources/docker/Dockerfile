@@ -59,18 +59,11 @@ ENV HOME=/home/${USER} \
 
 RUN install -d -m 0775 -o "${USER}" -g "${GROUP}" /srv
 WORKDIR /srv
-COPY --chown=${UID}:${GID} . /srv
 USER ${USER}
 
-# v5: extension provides Phalcon (phalcon/phalcon stays dormant if present).
-# v6: install phalcon/phalcon explicitly so Phalcon is available without the ext.
-RUN <<EOT
-set -eux
-composer install --prefer-dist --no-interaction --no-progress
-if [ "${PHALCON_VARIANT}" = "v6" ]; then
-    composer require --dev --no-interaction --no-progress "phalcon/phalcon:^6@dev"
-fi
-EOT
+# No app code or vendor is baked in: the compose bind mount provides /srv at runtime,
+# and `composer install` is run there (writing vendor to the host). For the v6 variant,
+# also run `composer require --dev "phalcon/phalcon:^6@dev"`.
 
 # Keepalive so `docker compose up -d` holds the container open for `exec`;
 # `docker compose run --rm app <cmd>` still overrides this for one-off commands.

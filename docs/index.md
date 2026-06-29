@@ -529,6 +529,9 @@ that run the suite across the support matrix without local infrastructure. See
 cp resources/.env.example .env
 sed -i "s/^UID=.*/UID=$(id -u)/;s/^GID=.*/GID=$(id -g)/" .env   # match your host user
 
+# one-time: install dependencies (writes vendor to your checkout)
+docker compose run --rm app composer install
+
 # one-off commands
 docker compose run --rm app composer test                              # unit + sqlite
 docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.mysql.xml
@@ -541,8 +544,9 @@ docker compose exec app composer test
 
 The image's PHP version and Phalcon provider are build arguments: `PHP_VERSION`
 (8.1–8.5) and `PHALCON_VARIANT` (`v5` = C extension via PIE, `v6` = the `phalcon/phalcon`
-package). When you switch either value locally, run `docker compose down -v` first so the
-`vendor` volume re-initializes from the rebuilt image.
+package). When you switch either value locally, rebuild and re-install (there are no named
+volumes - dependencies live in your checkout): `docker compose up -d --build`, then
+`docker compose run --rm app composer install`.
 
 ---
 
