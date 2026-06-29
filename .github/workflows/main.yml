@@ -91,13 +91,11 @@ jobs:
 
       - name: Unit + sqlite
         run: composer test
-        continue-on-error: ${{ matrix.variant == 'v6' }}
 
       - name: Database drivers
         run: |
           vendor/bin/phpunit -c resources/phpunit.mysql.xml
           vendor/bin/phpunit -c resources/phpunit.pgsql.xml
-        continue-on-error: ${{ matrix.variant == 'v6' }}
 
       # Runtime-independent: run once on a single (v5) cell rather than all ten.
       - name: Static analysis, coding standard, layout
