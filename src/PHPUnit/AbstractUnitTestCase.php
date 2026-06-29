@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Talon\PHPUnit;
 
 use Closure;
+use Phalcon\Di\Di;
 use Phalcon\Talon\Environment;
 use Phalcon\Talon\Traits\FileSystemTrait;
 use Phalcon\Talon\Traits\ReflectionTrait;
@@ -33,6 +34,13 @@ abstract class AbstractUnitTestCase extends TestCase
 {
     use ReflectionTrait;
     use FileSystemTrait;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Di::reset();
+    }
 
     public function checkExtensionIsLoaded(string $extension): void
     {
