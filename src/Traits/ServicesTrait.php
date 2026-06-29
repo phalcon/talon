@@ -19,6 +19,7 @@ use Phalcon\Talon\Contracts\Settings;
 use Phalcon\Talon\Talon;
 use Predis\Client as RedisClient;
 
+use function array_filter;
 use function class_exists;
 use function extension_loaded;
 use function is_scalar;
@@ -94,7 +95,8 @@ trait ServicesTrait
         $adapter = new Memcached();
         $adapter->addServer($host, $port);
 
-        if (@$adapter->getVersion() === false) {
+        $stats = $adapter->getStats();
+        if (false === $stats || [] === array_filter($stats)) {
             // @codeCoverageIgnoreStart
             // Only reached when Memcached is unreachable; the suite needs it up.
             $this->markTestSkipped('Memcached is not reachable');
