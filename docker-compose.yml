@@ -9,6 +9,7 @@ services:
         UID: ${UID:-1000}
         GID: ${GID:-1000}
     container_name: ${PROJECT_PREFIX:-talon}-app
+    hostname: ${PROJECT_PREFIX:-talon}-app
     volumes:
       - .:/srv
       - vendor:/srv/vendor
