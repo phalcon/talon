@@ -19,6 +19,7 @@ use Phalcon\Di\InjectionAwareInterface;
 use Phalcon\Http\Response;
 use Phalcon\Http\ResponseInterface;
 use Phalcon\Talon\Exceptions\MissingService;
+use Phalcon\Talon\Traits\FunctionalAssertionsTrait;
 use Phalcon\Talon\Traits\FunctionalTrait;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -26,6 +27,7 @@ use stdClass;
 final class FunctionalMissingServiceTest extends TestCase
 {
     use FunctionalTrait;
+    use FunctionalAssertionsTrait;
 
     protected function appFactory(): callable
     {

@@ -22,10 +22,8 @@ use Phalcon\Talon\Exceptions\MissingService;
 use Phalcon\Talon\Exceptions\ResponseNotDispatched;
 
 use function get_debug_type;
-use function is_int;
 use function is_object;
 use function method_exists;
-use function str_contains;
 
 /**
  * @mixin \PHPUnit\Framework\TestCase
@@ -39,53 +37,6 @@ trait FunctionalTrait
     private mixed $response = null;
 
     abstract protected function appFactory(): callable;
-
-    public function assertAction(string $expected): void
-    {
-        $this->assertSame($expected, $this->dispatcher()->getActionName());
-    }
-
-    public function assertController(string $expected): void
-    {
-        $this->assertSame($expected, $this->dispatcher()->getControllerName());
-    }
-
-    public function assertDispatchIsForwarded(): void
-    {
-        $this->assertTrue($this->dispatcher()->wasForwarded());
-    }
-
-    /**
-     * @param array<string, string> $expected
-     */
-    public function assertHeader(array $expected): void
-    {
-        $headers = $this->response()->getHeaders();
-
-        foreach ($expected as $name => $value) {
-            $this->assertSame($value, $headers->get($name));
-        }
-    }
-
-    public function assertRedirectTo(string $location): void
-    {
-        $this->assertSame($location, $this->response()->getHeaders()->get('Location'));
-    }
-
-    public function assertResponseCode(int | string $expected): void
-    {
-        $expected = is_int($expected) ? (string) $expected : $expected;
-
-        $this->assertStringContainsString(
-            $expected,
-            (string) $this->response()->getHeaders()->get('Status')
-        );
-    }
-
-    public function assertResponseContentContains(string $needle): void
-    {
-        $this->assertTrue(str_contains($this->getContent(), $needle));
-    }
 
     public function dispatch(string $url): void
     {
@@ -105,16 +56,7 @@ trait FunctionalTrait
         return $this->response()->getContent();
     }
 
-    private function di(): DiInterface
-    {
-        if (!$this->application instanceof InjectionAwareInterface) {
-            throw new ResponseNotDispatched();
-        }
-
-        return $this->application->getDI();
-    }
-
-    private function dispatcher(): Dispatcher
+    protected function dispatcher(): Dispatcher
     {
         $dispatcher = $this->di()->getShared('dispatcher');
         if (!$dispatcher instanceof Dispatcher) {
@@ -124,12 +66,21 @@ trait FunctionalTrait
         return $dispatcher;
     }
 
-    private function response(): ResponseInterface
+    protected function response(): ResponseInterface
     {
         if (!$this->response instanceof ResponseInterface) {
             throw new ResponseNotDispatched();
         }
 
         return $this->response;
+    }
+
+    private function di(): DiInterface
+    {
+        if (!$this->application instanceof InjectionAwareInterface) {
+            throw new ResponseNotDispatched();
+        }
+
+        return $this->application->getDI();
     }
 }
