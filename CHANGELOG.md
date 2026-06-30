@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.0](https://github.com/phalcon/talon/releases/tag/v0.4.0) (2026-06-29)
+
+### Changed
+
+### Added
+
+- `Browser\Client` now emits the application's response cookies as `Set-Cookie` headers, so cookies set through the Phalcon cookies service round-trip through the BrowserKit cookie jar between in-process requests (and cookie deletions evict them). The application under test must run with cookie encryption disabled.
+
+### Fixed
+
+- `Browser\Client` caps redirect-following (`MAX_REDIRECTS`); an in-process redirect cycle now raises a clean `LogicException` instead of recursing until the runtime's stack overflows. The previous default (`-1`, unbounded) could segfault the Phalcon extension on a redirect loop.
+- `BrowserTrait::setCookie()` scopes the cookie to the request host, so a cookie set in a test can be expired by an application response — an empty-domain cookie (the previous default) could never be cleared.
+
+### Removed
+
 ## [0.3.0](https://github.com/phalcon/talon/releases/tag/v0.3.0) (2026-06-29)
 
 ### Changed
