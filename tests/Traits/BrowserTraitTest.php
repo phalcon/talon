@@ -110,6 +110,18 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->assertPageContainsText('cookie sent=crunchy');
     }
 
+    public function testSetCookieIsClearedWhenTheAppExpiresIt(): void
+    {
+        // A set cookie is host-scoped, so a response that expires it on the same
+        // host actually evicts it from the jar (an empty-domain cookie would not).
+        $this->setCookie('talon', 'crunchy');
+        $this->assertSame('crunchy', $this->getCookie('talon'));
+
+        $this->visitPage('/browser/cookieClear');
+
+        $this->assertNull($this->getCookie('talon'));
+    }
+
     public function testMissingLinkThrows(): void
     {
         $this->visitPage('/browser/menu');

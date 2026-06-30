@@ -77,7 +77,11 @@ trait BrowserTrait
 
     public function setCookie(string $name, string $value): void
     {
-        $this->browser()->getCookieJar()->set(new Cookie($name, $value));
+        // Scope the cookie to the host visitPage() uses. An empty domain (the
+        // BrowserKit default) is sent on every request yet can never be expired
+        // by a response Set-Cookie - those are bucketed under the request host -
+        // so the app could never clear a test-set cookie.
+        $this->browser()->getCookieJar()->set(new Cookie($name, $value, null, '/', 'localhost'));
     }
 
     public function visitPage(string $url): void

@@ -49,6 +49,10 @@ $di->setShared('dispatcher', function () {
     return $dispatcher;
 });
 
+// The in-process browser reads cookies raw off the service, so encryption must
+// be off (mirrors the requirement documented on Client::extractSetCookies()).
+$di->getShared('cookies')->useEncryption(false);
+
 $application = new Application($di);
 $application->useImplicitView(false);
 

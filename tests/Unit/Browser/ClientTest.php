@@ -17,6 +17,7 @@ use Phalcon\Talon\Browser\Client;
 use Phalcon\Talon\Exceptions\InvalidApplication;
 use PHPUnit\Framework\TestCase;
 use stdClass;
+use Symfony\Component\BrowserKit\Exception\LogicException;
 
 final class ClientTest extends TestCase
 {
@@ -52,6 +53,26 @@ final class ClientTest extends TestCase
         $cookie = $client->getCookieJar()->get('baked');
         $this->assertNotNull($cookie);
         $this->assertSame('yummy', $cookie->getValue());
+    }
+
+    public function testCookiesServiceCookiesLandInTheJar(): void
+    {
+        $client = $this->client();
+        $client->request('GET', 'http://localhost/browser/cookieService');
+
+        $cookie = $client->getCookieJar()->get('svc');
+        $this->assertNotNull($cookie);
+        $this->assertSame('value', $cookie->getValue());
+    }
+
+    public function testRedirectLoopRaisesInsteadOfRecursing(): void
+    {
+        $client = $this->client();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('maximum number');
+
+        $client->request('GET', 'http://localhost/browser/loop');
     }
 
     public function testFactoryWithoutHandleThrows(): void

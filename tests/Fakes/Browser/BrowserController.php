@@ -17,6 +17,7 @@ use Phalcon\Http\ResponseInterface;
 use Phalcon\Mvc\Controller;
 
 /**
+ * @property \Phalcon\Http\Response\Cookies    $cookies
  * @property \Phalcon\Encryption\Security      $security
  * @property \Phalcon\Http\Request             $request
  * @property \Phalcon\Http\Response            $response
@@ -36,6 +37,24 @@ class BrowserController extends Controller
         $this->response->setHeader('Set-Cookie', 'baked=yummy; Path=/');
 
         return $this->response->setContent('cookie sent=' . $sent);
+    }
+
+    public function cookieClearAction(): ResponseInterface
+    {
+        // Expire a cookie through the cookies service; the Client emits the
+        // deletion so the browser jar drops it.
+        $this->cookies->set('talon', '', time() - 3600);
+
+        return $this->response->setContent('cookie cleared');
+    }
+
+    public function cookieServiceAction(): ResponseInterface
+    {
+        // Set a cookie via the cookies service (not a raw header). The Client has
+        // to read it off the service and emit it for the jar to capture it.
+        $this->cookies->set('svc', 'value', time() + 3600);
+
+        return $this->response->setContent('cookie service');
     }
 
     public function echoAction(): ResponseInterface
@@ -65,6 +84,12 @@ class BrowserController extends Controller
     public function landedAction(): ResponseInterface
     {
         return $this->response->setContent('<html><body>landed ok</body></html>');
+    }
+
+    public function loopAction(): ResponseInterface
+    {
+        // Always redirects to itself - drives the Client into a redirect cycle.
+        return $this->response->redirect('/browser/loop', true);
     }
 
     public function menuAction(): ResponseInterface
