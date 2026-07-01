@@ -63,7 +63,7 @@ final class ConnectionTest extends TestCase
 
     public function testSqliteWalPragmaApplied(): void
     {
-        // WAL mode requires a real file — sqlite silently falls back to
+        // WAL mode requires a real file - sqlite silently falls back to
         // 'memory' journal mode for ':memory:' databases, so this needs a
         // file-backed connection to actually verify the pragma took effect.
         $root   = dirname(__DIR__, 3);
