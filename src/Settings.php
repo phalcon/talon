@@ -43,6 +43,7 @@ final class Settings implements SettingsContract
      * @param array<string, mixed>                $extra
      * @param array<string, mixed>                $paths
      * @param array<string, mixed>                $redisCluster
+     * @param array<string, array<string, mixed>> $services
      */
     private function __construct(
         private string $root,
@@ -52,6 +53,7 @@ final class Settings implements SettingsContract
         private array $extra = [],
         private array $paths = [],
         private array $redisCluster = [],
+        private array $services = [],
     ) {
     }
 
@@ -72,7 +74,8 @@ final class Settings implements SettingsContract
             $extra['redis'],
             $extra['memcached'],
             $extra['paths'],
-            $extra['redisCluster']
+            $extra['redisCluster'],
+            $extra['services']
         );
 
         return new self(
@@ -83,6 +86,7 @@ final class Settings implements SettingsContract
             $extra,
             self::section($config, 'paths'),
             self::section($config, 'redisCluster'),
+            self::sectionOfArrays($config, 'services'),
         );
     }
 
@@ -99,6 +103,23 @@ final class Settings implements SettingsContract
 
         $rootOverride = $overrides['root'] ?? null;
         $root         = is_string($rootOverride) && $rootOverride !== '' ? $rootOverride : self::discoverRoot();
+
+        // Simple `host`/`port`-shaped services read entirely from env vars,
+        // declared here rather than as one hand-written method each - add a
+        // new entry to grow this list instead of a new getXOptions() method.
+        $serviceFields = [
+            'beanstalk' => [
+                'host' => 'DATA_BEANSTALKD_HOST',
+                'port' => 'DATA_BEANSTALKD_PORT',
+            ],
+        ];
+
+        $services = [];
+        foreach ($serviceFields as $name => $fields) {
+            foreach ($fields as $field => $envKey) {
+                $services[$name][$field] = $env($envKey);
+            }
+        }
 
         return new self(
             $root,
@@ -142,6 +163,7 @@ final class Settings implements SettingsContract
                 'hosts' => array_filter(explode(',', $env('DATA_REDIS_CLUSTER_HOSTS'))),
                 'auth'  => $env('DATA_REDIS_CLUSTER_AUTH'),
             ],
+            $services,
         );
     }
 
@@ -207,6 +229,14 @@ final class Settings implements SettingsContract
     public function getRedisOptions(): array
     {
         return $this->redis;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getServiceOptions(string $name): array
+    {
+        return $this->services[$name] ?? [];
     }
 
     public function cachePath(string $relative = ''): string

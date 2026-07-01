@@ -119,6 +119,20 @@ final class SettingsTest extends TestCase
         $this->assertSame('redis-host', $settings->getRedisOptions()['host']);
     }
 
+    public function testFromEnvReadsBeanstalkServiceOptions(): void
+    {
+        $settings = Settings::fromEnv([
+            'root'                  => '/app',
+            'DATA_BEANSTALKD_HOST'  => 'beanstalk-host',
+            'DATA_BEANSTALKD_PORT'  => '11300',
+        ]);
+
+        $this->assertSame(
+            ['host' => 'beanstalk-host', 'port' => '11300'],
+            $settings->getServiceOptions('beanstalk')
+        );
+    }
+
     public function testFromEnvReadsDumpFileAndInitialQueries(): void
     {
         $settings = Settings::fromEnv([
@@ -214,6 +228,28 @@ final class SettingsTest extends TestCase
 
         $this->assertSame('value', $settings->get('custom'));
         $this->assertSame('fallback', $settings->get('missing', 'fallback'));
+    }
+
+    public function testGetServiceOptionsFromArray(): void
+    {
+        $settings = Settings::fromArray([
+            'root'     => '/app',
+            'services' => [
+                'beanstalk' => ['host' => '127.0.0.1', 'port' => '11300'],
+            ],
+        ]);
+
+        $this->assertSame(
+            ['host' => '127.0.0.1', 'port' => '11300'],
+            $settings->getServiceOptions('beanstalk')
+        );
+    }
+
+    public function testGetServiceOptionsUnknownNameReturnsEmptyArray(): void
+    {
+        $settings = Settings::fromArray(['root' => '/app']);
+
+        $this->assertSame([], $settings->getServiceOptions('unknown'));
     }
 
     public function testDiscoverRootFallsBackWhenNoComposerJson(): void

@@ -12,6 +12,7 @@
 - `Settings::getDatabaseOptions('pgsql')` now includes a `schema` key, read from `DATA_POSTGRES_SCHEMA`.
 - `Settings::getRedisClusterOptions(): array` (new, also on `Contracts\Settings`) reads `DATA_REDIS_CLUSTER_HOSTS`/`DATA_REDIS_CLUSTER_AUTH`, returning `['hosts' => list<string>, 'auth' => string]`.
 - `Traits\DatabaseTrait::getDriver(): string` (new, public) exposes the driver `getConnection()` already resolves internally.
+- `Settings::getServiceOptions(string $name): array` (new, also on `Contracts\Settings`) — a generic, key/name-based accessor for simple `host`/`port`-shaped third-party services, so a new service doesn't need its own `getXOptions()` method. `fromEnv()` populates it from a small internal declarative table (currently just `beanstalk`, reading `DATA_BEANSTALKD_HOST`/`DATA_BEANSTALKD_PORT`); `fromArray()` reads a `services` section shaped the same way `db` is. This is additive to, not a replacement for, the existing named accessors (`getDatabaseOptions()`, `getRedisOptions()`, `getMemcachedOptions()`) — those stay as-is given their scale of use and per-driver quirks.
 
 ### Fixed
 
