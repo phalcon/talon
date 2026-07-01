@@ -14,15 +14,12 @@
 # in the "Tests with coverage" workflow step - the same file the SonarQube
 # scan already reads, so the two dashboards never disagree with each other.
 #
-# Floor verified locally at 95.35% with redis/memcached unreachable (those
-# tests skip rather than run in a plain local environment). CI runs redis
-# and memcached as real service containers, so the actual CI coverage should
-# be at or above this - if it comes in meaningfully higher, raise the floor
-# to match.
+# Floor verified locally at 100% under the phalcon/phalcon (v6) provider,
+# which the coverage job uses (see .github/workflows/main.yml).
 coverage:
   paths:
     - ../tests/_output/coverage.xml
-  acceptable: "current >= 95.0%"
+  acceptable: "current >= 100.0%"
   badge:
     path: ../tests/_output/coverage.svg
 codeToTestRatio:
