@@ -120,6 +120,10 @@ final class Settings implements SettingsContract
                 'port'   => (int) $env('DATA_MEMCACHED_PORT', '11211'),
                 'weight' => (int) $env('DATA_MEMCACHED_WEIGHT', '0'),
             ],
+            [
+                'dump_file'       => $env('dump_file'),
+                'initial_queries' => $env('initial_queries'),
+            ],
         );
     }
 

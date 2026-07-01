@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+### Added
+
+- `Settings::fromEnv()` now reads `dump_file` and `initial_queries` (no `DATA_*` prefix, matching the existing lowercase `driver` env-var convention `DatabaseTrait` already used) into the settings' extra-config bag, retrievable via `Settings::get()`.
+- `Database\Connection` now applies `PRAGMA journal_mode = WAL` for the sqlite driver and runs an optional `initial_queries` SQL string (from `Settings::get('initial_queries')`) immediately after connecting, before any other statement.
+- `Traits\DatabaseTrait::getConnection()` now automatically loads the schema from `Settings::get('dump_file')` the first time a connection is built for a given driver, guarded by the same per-driver cache used for connection reuse. No-op when `dump_file` is unset (fully backward compatible).
+
+### Fixed
+
+### Removed
+
 ## [0.4.0](https://github.com/phalcon/talon/releases/tag/v0.4.0) (2026-06-29)
 
 ### Changed

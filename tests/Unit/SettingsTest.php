@@ -119,6 +119,18 @@ final class SettingsTest extends TestCase
         $this->assertSame('redis-host', $settings->getRedisOptions()['host']);
     }
 
+    public function testFromEnvReadsDumpFileAndInitialQueries(): void
+    {
+        $settings = Settings::fromEnv([
+            'root'            => '/app',
+            'dump_file'       => 'tests/support/assets/schema/mysql.sql',
+            'initial_queries' => 'SET NAMES utf8;',
+        ]);
+
+        $this->assertSame('tests/support/assets/schema/mysql.sql', $settings->get('dump_file'));
+        $this->assertSame('SET NAMES utf8;', $settings->get('initial_queries'));
+    }
+
     public function testPgsqlDsn(): void
     {
         $settings = Settings::fromArray(
