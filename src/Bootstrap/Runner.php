@@ -25,7 +25,6 @@ use function function_exists;
 use function ini_set;
 use function is_dir;
 use function mb_internal_encoding;
-use function mb_substitute_character;
 use function mkdir;
 use function setlocale;
 
@@ -93,10 +92,6 @@ class Runner implements BootstrapContract
 
         if (function_exists('mb_internal_encoding')) {
             mb_internal_encoding('utf-8');
-        }
-
-        if (function_exists('mb_substitute_character')) {
-            mb_substitute_character('none');
         }
 
         clearstatcache();
