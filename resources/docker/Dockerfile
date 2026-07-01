@@ -20,7 +20,11 @@ apt-get update -y
 apt-get install -yq --no-install-recommends \
     curl git unzip zip \
     default-mysql-client postgresql-client \
-    libicu-dev libzip-dev libpq-dev libsqlite3-dev libmemcached-dev zlib1g-dev
+    libicu-dev libzip-dev libpq-dev libsqlite3-dev libmemcached-dev zlib1g-dev \
+    locales
+sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+dpkg-reconfigure --frontend=noninteractive locales
+update-locale LANG=en_US.UTF-8
 docker-php-ext-install intl zip pdo_mysql pdo_pgsql pdo_sqlite
 apt-get clean -y
 rm -rf /var/lib/apt/lists/*
@@ -55,7 +59,10 @@ COPY resources/docker/extra.ini /usr/local/etc/php/conf.d/zz-talon.ini
 COPY --chown=${UID}:${GID} resources/docker/.bashrc /home/${USER}/.bashrc
 
 ENV HOME=/home/${USER} \
-    COMPOSER_HOME=/home/${USER}/.composer
+    COMPOSER_HOME=/home/${USER}/.composer \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
 
 RUN install -d -m 0775 -o "${USER}" -g "${GROUP}" /srv
 WORKDIR /srv

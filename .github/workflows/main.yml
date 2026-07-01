@@ -89,6 +89,9 @@ jobs:
             composer require --dev --no-interaction --no-progress "phalcon/phalcon:^6@dev"
           fi
 
+      - name: Setup locales
+        run: ./resources/linux-setup-locales.sh
+
       - name: Unit + sqlite
         run: composer test
 
@@ -156,6 +159,9 @@ jobs:
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Setup locales
+        run: ./resources/linux-setup-locales.sh
 
       - name: Tests with coverage
         run: composer test-coverage
