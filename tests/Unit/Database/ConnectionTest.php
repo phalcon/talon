@@ -24,12 +24,12 @@ final class ConnectionTest extends TestCase
     {
         $conn = $this->sqlite();
         $conn->execute('CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT)');
-        $conn->execute("INSERT INTO users VALUES (1, 'nikos@niden.net')");
+        $conn->execute("INSERT INTO users VALUES (1, 'john.connor@skynet.dev')");
 
         $rows = $conn->select('users', ['id' => 1]);
 
         $this->assertCount(1, $rows);
-        $this->assertSame('nikos@niden.net', $rows[0]['email']);
+        $this->assertSame('john.connor@skynet.dev', $rows[0]['email']);
     }
 
     public function testLoadSchemaFromFile(): void
@@ -45,6 +45,45 @@ final class ConnectionTest extends TestCase
     {
         $this->expectException(SchemaFileNotFound::class);
         $this->sqlite()->loadSchema('/does/not/exist.sql');
+    }
+
+    public function testInitialQueriesRunAfterConnect(): void
+    {
+        $settings = Settings::fromArray([
+            'root'            => '/app',
+            'db'              => ['sqlite' => ['dbname' => ':memory:']],
+            'initial_queries' => 'CREATE TABLE seeded (id INTEGER);',
+        ]);
+
+        $conn = new Connection($settings, 'sqlite');
+        $conn->execute('INSERT INTO seeded VALUES (1)');
+
+        $this->assertCount(1, $conn->select('seeded'));
+    }
+
+    public function testSqliteWalPragmaApplied(): void
+    {
+        // WAL mode requires a real file - sqlite silently falls back to
+        // 'memory' journal mode for ':memory:' databases, so this needs a
+        // file-backed connection to actually verify the pragma took effect.
+        $root   = dirname(__DIR__, 3);
+        $dbFile = Settings::fromArray(['root' => $root])
+            ->outputPath('wal-pragma-' . uniqid('', true) . '.sqlite');
+
+        try {
+            $settings = Settings::fromArray([
+                'root' => $root,
+                'db'   => ['sqlite' => ['dbname' => $dbFile]],
+            ]);
+
+            $conn      = new Connection($settings, 'sqlite');
+            $statement = $conn->getPdo()->query('PRAGMA journal_mode');
+            $this->assertNotFalse($statement);
+
+            $this->assertSame('wal', $statement->fetchColumn());
+        } finally {
+            unlink($dbFile);
+        }
     }
 
     private function sqlite(): Connection

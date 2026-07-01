@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Traits;
 
+use Phalcon\Talon\Tests\Fakes\MultiplySubject;
 use Phalcon\Talon\Tests\Fakes\ReflectionSubject;
 use Phalcon\Talon\Traits\ReflectionTrait;
 use PHPUnit\Framework\TestCase;
@@ -23,14 +24,7 @@ final class ReflectionTraitTest extends TestCase
 
     public function testCallProtectedMethodAndProperties(): void
     {
-        $subject = new class () {
-            private int $value = 2;
-
-            protected function multiply(int $n): int
-            {
-                return $this->value * $n;
-            }
-        };
+        $subject = new MultiplySubject();
 
         $this->assertSame(6, $this->callProtectedMethod($subject, 'multiply', 3));
         $this->assertSame(2, $this->getProtectedProperty($subject, 'value'));

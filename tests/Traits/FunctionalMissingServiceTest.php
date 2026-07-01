@@ -13,48 +13,20 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Traits;
 
-use Phalcon\Di\Di;
-use Phalcon\Di\DiInterface;
-use Phalcon\Di\InjectionAwareInterface;
-use Phalcon\Http\Response;
-use Phalcon\Http\ResponseInterface;
 use Phalcon\Talon\Exceptions\MissingService;
+use Phalcon\Talon\Tests\Fakes\App\FakeAppWithMissingDispatcher;
+use Phalcon\Talon\Traits\FunctionalAssertionsTrait;
 use Phalcon\Talon\Traits\FunctionalTrait;
 use PHPUnit\Framework\TestCase;
-use stdClass;
 
 final class FunctionalMissingServiceTest extends TestCase
 {
     use FunctionalTrait;
+    use FunctionalAssertionsTrait;
 
     protected function appFactory(): callable
     {
-        return static function (): object {
-            return new class () implements InjectionAwareInterface {
-                private DiInterface $di;
-
-                public function __construct()
-                {
-                    $this->di = new Di();
-                    $this->di->set('dispatcher', fn () => new stdClass());
-                }
-
-                public function getDI(): DiInterface
-                {
-                    return $this->di;
-                }
-
-                public function handle(string $uri): ResponseInterface
-                {
-                    return (new Response())->setContent($uri);
-                }
-
-                public function setDI(DiInterface $di): void
-                {
-                    $this->di = $di;
-                }
-            };
-        };
+        return static fn (): object => new FakeAppWithMissingDispatcher();
     }
 
     public function testMissingDispatcherThrows(): void

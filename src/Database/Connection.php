@@ -52,6 +52,15 @@ final class Connection implements ConnectionContract
             );
 
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            if ($this->driver === 'sqlite') {
+                $this->pdo->exec('PRAGMA journal_mode = WAL');
+            }
+
+            $initialQueries = $this->settings->get('initial_queries', '');
+            if (is_string($initialQueries) && $initialQueries !== '') {
+                $this->pdo->exec($initialQueries);
+            }
         }
 
         return $this->pdo;

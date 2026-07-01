@@ -11,6 +11,7 @@
             <directory>../tests/Unit</directory>
             <directory>../tests/Traits</directory>
             <directory>../tests/Database</directory>
+            <directory>../tests/Fakes</directory>
         </testsuite>
     </testsuites>
     <source restrictDeprecations="true">
