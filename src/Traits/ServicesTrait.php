@@ -81,7 +81,7 @@ trait ServicesTrait
 
     protected function createMemcachedClient(): Memcached
     {
-        $options = $this->settings()->getMemcachedOptions();
+        $options = $this->settings()->getServiceOptions('memcached');
         $host    = isset($options['host']) && is_scalar($options['host']) ? (string) $options['host'] : '127.0.0.1';
         $port    = isset($options['port']) && is_scalar($options['port']) ? (int) $options['port'] : 11211;
 
@@ -93,7 +93,7 @@ trait ServicesTrait
 
     protected function createRedisClient(): RedisClient
     {
-        return new RedisClient($this->settings()->getRedisOptions());
+        return new RedisClient($this->settings()->getServiceOptions('redis'));
     }
 
     protected function memcachedAvailable(): bool
