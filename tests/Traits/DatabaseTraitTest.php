@@ -19,6 +19,8 @@ use Phalcon\Talon\Traits\DatabaseTrait;
 use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\TestCase;
 
+use function dirname;
+
 final class DatabaseTraitTest extends TestCase
 {
     use DatabaseTrait;
@@ -56,5 +58,28 @@ final class DatabaseTraitTest extends TestCase
     public function testAssertNotInDatabasePasses(): void
     {
         $this->assertNotInDatabase('users', ['id' => 999]);
+    }
+
+    public function testGetConnectionLoadsSchemaOnceWhenDumpFileConfigured(): void
+    {
+        Talon::useSettings(Settings::fromArray([
+            'root'      => '/app',
+            'db'        => ['sqlite' => ['dbname' => ':memory:']],
+            'dump_file' => dirname(__DIR__) . '/Fakes/seeded-users.sql',
+        ]));
+        self::resetConnections();
+
+        $this->assertInDatabase('seeded_users', ['id' => 1]);
+    }
+
+    public function testGetDriverReturnsCurrentEnvDriver(): void
+    {
+        putenv('driver=pgsql');
+
+        try {
+            $this->assertSame('pgsql', $this->getDriver());
+        } finally {
+            putenv('driver');
+        }
     }
 }

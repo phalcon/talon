@@ -66,6 +66,16 @@ trait FunctionalTrait
         return $dispatcher;
     }
 
+    protected function resolveDi(InjectionAwareInterface $application): DiInterface
+    {
+        $di = $application->getDI();
+        if (!$di instanceof DiInterface) {
+            throw new ResponseNotDispatched();
+        }
+
+        return $di;
+    }
+
     protected function response(): ResponseInterface
     {
         if (!$this->response instanceof ResponseInterface) {
@@ -81,6 +91,6 @@ trait FunctionalTrait
             throw new ResponseNotDispatched();
         }
 
-        return $this->application->getDI();
+        return $this->resolveDi($this->application);
     }
 }

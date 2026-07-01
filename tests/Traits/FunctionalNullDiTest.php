@@ -13,27 +13,33 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Traits;
 
-use Phalcon\Talon\Exceptions\MissingService;
-use Phalcon\Talon\Tests\Fakes\App\FakeAppWithMissingDispatcher;
+use Phalcon\Di\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
+use Phalcon\Talon\Exceptions\ResponseNotDispatched;
 use Phalcon\Talon\Traits\FunctionalAssertionsTrait;
 use Phalcon\Talon\Traits\FunctionalTrait;
 use PHPUnit\Framework\TestCase;
 
-final class FunctionalMissingServiceTest extends TestCase
+final class FunctionalNullDiTest extends TestCase
 {
     use FunctionalTrait;
     use FunctionalAssertionsTrait;
 
     protected function appFactory(): callable
     {
-        return static fn (): object => new FakeAppWithMissingDispatcher();
+        return static fn () => require __DIR__ . '/../Fakes/App/app.php';
     }
 
-    public function testMissingDispatcherThrows(): void
+    protected function resolveDi(InjectionAwareInterface $application): DiInterface
     {
-        $this->dispatch('/');
+        throw new ResponseNotDispatched();
+    }
 
-        $this->expectException(MissingService::class);
+    public function testNullDiThrows(): void
+    {
+        $this->dispatch('/test/hello');
+
+        $this->expectException(ResponseNotDispatched::class);
 
         $this->assertController('test');
     }

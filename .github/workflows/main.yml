@@ -89,6 +89,9 @@ jobs:
             composer require --dev --no-interaction --no-progress "phalcon/phalcon:^6@dev"
           fi
 
+      - name: Setup locales
+        run: ./resources/linux-setup-locales.sh
+
       - name: Unit + sqlite
         run: composer test
 
@@ -106,9 +109,8 @@ jobs:
           composer cs-fixer
 
   sonarqube:
-    name: SonarQube
+    name: Coverage & SonarQube
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     services:
       mysql:
         image: mysql:8.0
@@ -152,11 +154,14 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo_mysql, pdo_pgsql, pdo_sqlite, sqlite3, intl, zip, memcached, phalcon
+          extensions: pdo_mysql, pdo_pgsql, pdo_sqlite, sqlite3, intl, zip, memcached
           coverage: pcov
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Setup locales
+        run: ./resources/linux-setup-locales.sh
 
       - name: Tests with coverage
         run: composer test-coverage
@@ -173,3 +178,8 @@ jobs:
             -Dsonar.tests=tests
             -Dsonar.exclusions=resources/**
             -Dsonar.php.coverage.reportPaths=tests/_output/coverage.xml
+
+      - name: octocov
+        uses: k1LoW/octocov-action@b3b6ee60482a667950f87553abf1df63217235d9 # v1.5.1
+        with:
+          config: ${{ github.event_name == 'pull_request' && 'resources/octocov.pr.yml' || 'resources/octocov.yml' }}

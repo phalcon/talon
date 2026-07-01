@@ -94,9 +94,11 @@ final class Client extends AbstractBrowser
     }
 
     /**
-     * Phalcon only writes Set-Cookie headers when the response is sent, which the
-     * in-process dispatch never does. Pull the cookies off the application's
-     * cookies service so the BrowserKit jar can carry (and expire) them between
+     * Phalcon\Mvc\Application::handle() does eagerly call Response::sendCookies()
+     * (firing PHP's native setcookie() for each registered cookie), but that never
+     * produces an inspectable HTTP header - there's no real HTTP transport here for
+     * BrowserKit to observe. Pull the cookies off the application's cookies service
+     * directly instead, so the BrowserKit jar can carry (and expire) them between
      * requests. Values are read raw, so the application under test must run with
      * cookie encryption disabled.
      *

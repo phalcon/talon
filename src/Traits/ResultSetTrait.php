@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Traits;
 
 use Phalcon\Mvc\Model\Resultset;
+use Phalcon\Mvc\ModelInterface;
 use Phalcon\Talon\Exceptions\InvalidResultsetClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionProperty;
@@ -34,7 +35,7 @@ trait ResultSetTrait
      * @param array<int|string, mixed> $dataSet
      * @param class-string             $className
      *
-     * @return Resultset&MockObject
+     * @return Resultset<int, ModelInterface<object>>&MockObject
      */
     public function mockResultSet(array $dataSet, string $className = Resultset::class): MockObject
     {

@@ -29,7 +29,7 @@ For the **v6** variant, also pull in the PHP implementation after installing:
 docker compose run --rm app composer require --dev "phalcon/phalcon:^6@dev"
 ```
 
-When you change `PHP_VERSION` or `PHALCON_VARIANT`, rebuild and re-install — there are no
+When you change `PHP_VERSION` or `PHALCON_VARIANT`, rebuild and re-install - there are no
 named volumes to reset, dependencies live in your checkout:
 
 ```bash

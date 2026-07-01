@@ -19,6 +19,7 @@ use Phalcon\Talon\Database\Connection;
 use Phalcon\Talon\Talon;
 
 use function getenv;
+use function is_string;
 
 /**
  * @mixin \PHPUnit\Framework\TestCase
@@ -59,7 +60,23 @@ trait DatabaseTrait
     {
         $driver = $this->databaseDriver();
 
-        return self::$connections[$driver] ??= new Connection($this->getSettings(), $driver);
+        if (!isset(self::$connections[$driver])) {
+            $connection = new Connection($this->getSettings(), $driver);
+
+            $dumpFile = $this->getSettings()->get('dump_file');
+            if (is_string($dumpFile) && $dumpFile !== '') {
+                $connection->loadSchema($dumpFile);
+            }
+
+            self::$connections[$driver] = $connection;
+        }
+
+        return self::$connections[$driver];
+    }
+
+    public function getDriver(): string
+    {
+        return $this->databaseDriver();
     }
 
     /**

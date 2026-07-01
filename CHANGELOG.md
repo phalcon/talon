@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.6.0](https://github.com/phalcon/talon/releases/tag/v0.5.0) (2026-xx-xx)
+
+### Changed
+
+### Added
+
+### Fixed
+
+### Removed
+
+## [0.5.0](https://github.com/phalcon/talon/releases/tag/v0.5.0) (2026-07-01)
+
+### Changed
+
+- `Settings::getMemcachedOptions()`, `getRedisOptions()`, and `getRedisClusterOptions()` are removed. Use `getServiceOptions('memcached')`, `getServiceOptions('redis')`, and `getServiceOptions('redisCluster')` instead - same return shape, same values, no other change needed at call sites.
+- `Settings`'s internal storage is unified: `db`'s three drivers (`mysql`/`pgsql`/`sqlite`) and every other service (`redis`/`memcached`/`redisCluster`/`beanstalk`) are now all stored as named `ServiceOptions` instances in one collection. `getDatabaseOptions(string $driver)`/`getDatabaseDsn(string $driver)` keep their exact existing public signatures and behavior (including throwing `UnknownDriver` for unsupported names) - only their internals changed.
+- `Settings::fromArray()`'s config shape: the separate top-level `'redis'`/`'memcached'`/`'redisCluster'` keys are replaced by one `'services' => ['redis' => [...], 'memcached' => [...], 'redisCluster' => [...], 'beanstalk' => [...]]` section (matching how `beanstalk` already worked). Each entry may be a raw options array or an already-constructed `ServiceOptions` instance. `'db' => [...]` keeps its existing shape unchanged.
+
+### Added
+
+- `Phalcon\Talon\ServiceOptions` (new) - a small value object (`getName(): string`, `getOptions(): array`) used internally by `Settings` to represent every named service's (including each db driver's) options uniformly.
+- `Settings::fromEnv()` now reads `dump_file` and `initial_queries` (no `DATA_*` prefix, matching the existing lowercase `driver` env-var convention `DatabaseTrait` already used) into the settings' extra-config bag, retrievable via `Settings::get()`.
+- `Database\Connection` now applies `PRAGMA journal_mode = WAL` for the sqlite driver and runs an optional `initial_queries` SQL string (from `Settings::get('initial_queries')`) immediately after connecting, before any other statement.
+- `Traits\DatabaseTrait::getConnection()` now automatically loads the schema from `Settings::get('dump_file')` the first time a connection is built for a given driver, guarded by the same per-driver cache used for connection reuse. No-op when `dump_file` is unset (fully backward compatible).
+- `Settings::getDatabaseOptions('pgsql')` now includes a `schema` key, read from `DATA_POSTGRES_SCHEMA`.
+- `Traits\DatabaseTrait::getDriver(): string` (new, public) exposes the driver `getConnection()` already resolves internally.
+- `Settings::getServiceOptions(string $name): array` (new, also on `Contracts\Settings`) - a generic, key/name-based accessor for simple `host`/`port`-shaped third-party services, reading `redis`, `memcached`, `redisCluster`, `beanstalk`, and each db driver's options. `fromEnv()` populates it from a small internal declarative table; `fromArray()` reads a `services` section shaped the same way `db` is.
+- `Bootstrap\Runner::initEnvironment()` now also sets `display_errors`/`display_startup_errors`, a `en_US.utf-8` locale, the `mbstring` internal encoding default, clears the stat cache, and (when the `xdebug` extension is loaded) tunes `xdebug.cli_color`/`xdebug.dump_globals`/`xdebug.show_local_vars`/`xdebug.max_nesting_level`/`xdebug.var_display_max_depth` for readable CLI debugging. `error_reporting(E_ALL)` and the `UTC` timezone it already set are unchanged. (`mb_substitute_character('none')` was deliberately *not* ported despite being part of the source this was consolidated from - it makes `mb_convert_encoding()` silently drop unrepresentable characters instead of substituting `?`, which conflicts with at least one real test's expectations.)
+- `Bootstrap\Runner::isExtensionLoaded(string $extension): bool` (new, protected) - wraps the `extension_loaded()` check `initEnvironment()`'s xdebug tuning uses, so a subclass can fake it in tests.
+- `Traits\FunctionalTrait::resolveDi(InjectionAwareInterface $application): DiInterface` (new, protected) - factored out of the internal `di()` helper so a subclass can fake DI resolution in tests, without needing a real `InjectionAwareInterface::getDI()` implementation that returns `null` (not expressible on every Phalcon provider - see Fixed).
+
+### Fixed
+
+- `Traits\FunctionalTrait`'s internal `di()` helper now throws `Exceptions\ResponseNotDispatched` (matching its existing precondition-failure behavior elsewhere in the same method) instead of returning a `null` DI silently typed as non-nullable - `InjectionAwareInterface::getDI()` can genuinely return `null`, which was previously unaccounted for.
+- `Traits\ResultSetTrait::mockResultSet()`'s return type now fully specifies `Phalcon\Mvc\Model\Resultset`'s and `Phalcon\Mvc\ModelInterface`'s generic type parameters. No behavior change - static-analysis-only fix.
+
+### Removed
+
 ## [0.4.0](https://github.com/phalcon/talon/releases/tag/v0.4.0) (2026-06-29)
 
 ### Changed
@@ -11,7 +49,7 @@
 ### Fixed
 
 - `Browser\Client` caps redirect-following (`MAX_REDIRECTS`); an in-process redirect cycle now raises a clean `LogicException` instead of recursing until the runtime's stack overflows. The previous default (`-1`, unbounded) could segfault the Phalcon extension on a redirect loop.
-- `BrowserTrait::setCookie()` scopes the cookie to the request host, so a cookie set in a test can be expired by an application response — an empty-domain cookie (the previous default) could never be cleared.
+- `BrowserTrait::setCookie()` scopes the cookie to the request host, so a cookie set in a test can be expired by an application response - an empty-domain cookie (the previous default) could never be cleared.
 
 ### Removed
 
