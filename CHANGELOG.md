@@ -21,6 +21,9 @@
 
 ### Fixed
 
+- `Traits\FunctionalTrait`'s internal `di()` helper now throws `Exceptions\ResponseNotDispatched` (matching its existing precondition-failure behavior elsewhere in the same method) instead of returning a `null` DI silently typed as non-nullable — `InjectionAwareInterface::getDI()` can genuinely return `null`, which was previously unaccounted for.
+- `Traits\ResultSetTrait::mockResultSet()`'s return type now fully specifies `Phalcon\Mvc\Model\Resultset`'s and `Phalcon\Mvc\ModelInterface`'s generic type parameters. No behavior change - static-analysis-only fix.
+
 ### Removed
 
 ## [0.4.0](https://github.com/phalcon/talon/releases/tag/v0.4.0) (2026-06-29)

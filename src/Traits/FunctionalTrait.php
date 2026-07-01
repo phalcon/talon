@@ -81,6 +81,11 @@ trait FunctionalTrait
             throw new ResponseNotDispatched();
         }
 
-        return $this->application->getDI();
+        $di = $this->application->getDI();
+        if (!$di instanceof DiInterface) {
+            throw new ResponseNotDispatched();
+        }
+
+        return $di;
     }
 }
