@@ -113,7 +113,7 @@ final class RunnerTest extends TestCase
     public function testInitEnvironmentSetsIniLocaleAndMbstringDefaults(): void
     {
         Talon::reset();
-        $settings = Settings::fromArray(['root' => '/app']);
+        $settings = Settings::fromArray(['root' => dirname(__DIR__, 3)]);
 
         Runner::for($settings)->boot();
 
