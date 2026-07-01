@@ -27,21 +27,6 @@ interface Settings
     /**
      * @return array<string, mixed>
      */
-    public function getMemcachedOptions(): array;
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getRedisClusterOptions(): array;
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getRedisOptions(): array;
-
-    /**
-     * @return array<string, mixed>
-     */
     public function getServiceOptions(string $name): array;
 
     public function cachePath(string $relative = ''): string;

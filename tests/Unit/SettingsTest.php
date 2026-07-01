@@ -16,6 +16,7 @@ namespace Phalcon\Talon\Tests\Unit;
 use Phalcon\Talon\Contracts\Settings as SettingsContract;
 use Phalcon\Talon\Exceptions\InvalidConfiguration;
 use Phalcon\Talon\Exceptions\UnknownDriver;
+use Phalcon\Talon\ServiceOptions;
 use Phalcon\Talon\Settings;
 use PHPUnit\Framework\TestCase;
 
@@ -116,7 +117,17 @@ final class SettingsTest extends TestCase
             'DATA_REDIS_HOST' => 'redis-host',
         ]);
 
-        $this->assertSame('redis-host', $settings->getRedisOptions()['host']);
+        $this->assertSame('redis-host', $settings->getServiceOptions('redis')['host']);
+    }
+
+    public function testFromEnvReadsMemcachedOverrides(): void
+    {
+        $settings = Settings::fromEnv([
+            'root'                => '/app',
+            'DATA_MEMCACHED_HOST' => 'memcached-host',
+        ]);
+
+        $this->assertSame('memcached-host', $settings->getServiceOptions('memcached')['host']);
     }
 
     public function testFromEnvReadsBeanstalkServiceOptions(): void
@@ -155,7 +166,7 @@ final class SettingsTest extends TestCase
 
         $this->assertSame(
             ['hosts' => ['10.0.0.1:6379', '10.0.0.2:6379'], 'auth' => 'secret'],
-            $settings->getRedisClusterOptions()
+            $settings->getServiceOptions('redisCluster')
         );
     }
 
@@ -163,23 +174,37 @@ final class SettingsTest extends TestCase
     {
         $settings = Settings::fromEnv(['root' => '/app']);
 
-        $this->assertSame([], $settings->getRedisClusterOptions()['hosts']);
+        $this->assertSame([], $settings->getServiceOptions('redisCluster')['hosts']);
     }
 
-    public function testGetRedisClusterOptionsFromArray(): void
+    public function testGetServiceOptionsFromArrayForRedisCluster(): void
     {
         $settings = Settings::fromArray([
-            'root'         => '/app',
-            'redisCluster' => [
-                'hosts' => ['10.0.0.1:6379', '10.0.0.2:6379'],
-                'auth'  => 'secret',
+            'root'     => '/app',
+            'services' => [
+                'redisCluster' => [
+                    'hosts' => ['10.0.0.1:6379', '10.0.0.2:6379'],
+                    'auth'  => 'secret',
+                ],
             ],
         ]);
 
         $this->assertSame(
             ['hosts' => ['10.0.0.1:6379', '10.0.0.2:6379'], 'auth' => 'secret'],
-            $settings->getRedisClusterOptions()
+            $settings->getServiceOptions('redisCluster')
         );
+    }
+
+    public function testFromArrayAcceptsServiceOptionsInstanceDirectly(): void
+    {
+        $settings = Settings::fromArray([
+            'root'     => '/app',
+            'services' => [
+                'redis' => new ServiceOptions('redis', ['host' => 'direct-host']),
+            ],
+        ]);
+
+        $this->assertSame(['host' => 'direct-host'], $settings->getServiceOptions('redis'));
     }
 
     public function testPgsqlDsn(): void
@@ -279,8 +304,11 @@ final class SettingsTest extends TestCase
 
     public function testNonArraySectionIsIgnored(): void
     {
-        $settings = Settings::fromArray(['root' => '/app', 'redis' => 'not-an-array']);
+        $settings = Settings::fromArray([
+            'root'     => '/app',
+            'services' => ['redis' => 'not-an-array'],
+        ]);
 
-        $this->assertSame([], $settings->getRedisOptions());
+        $this->assertSame([], $settings->getServiceOptions('redis'));
     }
 }

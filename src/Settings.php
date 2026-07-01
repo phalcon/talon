@@ -37,22 +37,14 @@ final class Settings implements SettingsContract
     private const DRIVERS      = ['mysql', 'pgsql', 'sqlite'];
 
     /**
-     * @param array<string, array<string, mixed>> $db
-     * @param array<string, mixed>                $redis
-     * @param array<string, mixed>                $memcached
-     * @param array<string, mixed>                $extra
-     * @param array<string, mixed>                $paths
-     * @param array<string, mixed>                $redisCluster
-     * @param array<string, array<string, mixed>> $services
+     * @param array<string, mixed>          $extra
+     * @param array<string, mixed>          $paths
+     * @param array<string, ServiceOptions> $services
      */
     private function __construct(
         private string $root,
-        private array $db,
-        private array $redis,
-        private array $memcached,
         private array $extra = [],
         private array $paths = [],
-        private array $redisCluster = [],
         private array $services = [],
     ) {
     }
@@ -71,22 +63,30 @@ final class Settings implements SettingsContract
         unset(
             $extra['root'],
             $extra['db'],
-            $extra['redis'],
-            $extra['memcached'],
             $extra['paths'],
-            $extra['redisCluster'],
             $extra['services']
         );
 
+        $services = [];
+        foreach (self::sectionOfArrays($config, 'db') as $name => $options) {
+            $services[$name] = new ServiceOptions($name, $options);
+        }
+
+        foreach (self::section($config, 'services') as $name => $value) {
+            $name = (string) $name;
+            if ($value instanceof ServiceOptions) {
+                $services[$name] = $value;
+            } elseif (is_array($value)) {
+                /** @var array<string, mixed> $value */
+                $services[$name] = new ServiceOptions($name, $value);
+            }
+        }
+
         return new self(
             $root,
-            self::sectionOfArrays($config, 'db'),
-            self::section($config, 'redis'),
-            self::section($config, 'memcached'),
             $extra,
             self::section($config, 'paths'),
-            self::section($config, 'redisCluster'),
-            self::sectionOfArrays($config, 'services'),
+            $services,
         );
     }
 
@@ -104,65 +104,72 @@ final class Settings implements SettingsContract
         $rootOverride = $overrides['root'] ?? null;
         $root         = is_string($rootOverride) && $rootOverride !== '' ? $rootOverride : self::discoverRoot();
 
-        // Simple `host`/`port`-shaped services read entirely from env vars,
-        // declared here rather than as one hand-written method each - add a
-        // new entry to grow this list instead of a new getXOptions() method.
+        // Simple `host`/`port`-shaped services (including each db driver)
+        // read entirely from env vars, declared here rather than as one
+        // hand-written method/array-literal each - add a new entry to grow
+        // this list. Each field is [envKey, default, cast] - cast is 'int'
+        // or null (string as-is).
         $serviceFields = [
+            'mysql' => [
+                'host'     => ['DATA_MYSQL_HOST', self::DEFAULT_HOST, null],
+                'port'     => ['DATA_MYSQL_PORT', '3306', 'int'],
+                'dbname'   => ['DATA_MYSQL_NAME', 'talon', null],
+                'username' => ['DATA_MYSQL_USER', 'root', null],
+                'password' => ['DATA_MYSQL_PASS', '', null],
+                'charset'  => ['DATA_MYSQL_CHARSET', 'utf8mb4', null],
+            ],
+            'pgsql' => [
+                'host'     => ['DATA_POSTGRES_HOST', self::DEFAULT_HOST, null],
+                'port'     => ['DATA_POSTGRES_PORT', '5432', 'int'],
+                'dbname'   => ['DATA_POSTGRES_NAME', 'talon', null],
+                'username' => ['DATA_POSTGRES_USER', 'postgres', null],
+                'password' => ['DATA_POSTGRES_PASS', '', null],
+                'schema'   => ['DATA_POSTGRES_SCHEMA', '', null],
+            ],
+            'sqlite' => [
+                'dbname' => ['DATA_SQLITE_NAME', ':memory:', null],
+            ],
+            'redis' => [
+                'host'  => ['DATA_REDIS_HOST', self::DEFAULT_HOST, null],
+                'port'  => ['DATA_REDIS_PORT', '6379', 'int'],
+                'index' => ['DATA_REDIS_NAME', '0', 'int'],
+            ],
+            'memcached' => [
+                'host'   => ['DATA_MEMCACHED_HOST', self::DEFAULT_HOST, null],
+                'port'   => ['DATA_MEMCACHED_PORT', '11211', 'int'],
+                'weight' => ['DATA_MEMCACHED_WEIGHT', '0', 'int'],
+            ],
             'beanstalk' => [
-                'host' => 'DATA_BEANSTALKD_HOST',
-                'port' => 'DATA_BEANSTALKD_PORT',
+                'host' => ['DATA_BEANSTALKD_HOST', '', null],
+                'port' => ['DATA_BEANSTALKD_PORT', '', null],
             ],
         ];
 
         $services = [];
         foreach ($serviceFields as $name => $fields) {
-            foreach ($fields as $field => $envKey) {
-                $services[$name][$field] = $env($envKey);
+            $options = [];
+            foreach ($fields as $field => $spec) {
+                [$envKey, $default, $cast] = $spec;
+                $value           = $env($envKey, $default);
+                $options[$field] = $cast === 'int' ? (int) $value : $value;
             }
+            $services[$name] = new ServiceOptions($name, $options);
         }
+
+        // redisCluster's `hosts` is a comma-separated env var, not a single
+        // value - doesn't fit the field => envKey table shape above.
+        $services['redisCluster'] = new ServiceOptions('redisCluster', [
+            'hosts' => array_filter(explode(',', $env('DATA_REDIS_CLUSTER_HOSTS'))),
+            'auth'  => $env('DATA_REDIS_CLUSTER_AUTH'),
+        ]);
 
         return new self(
             $root,
-            [
-                'mysql' => [
-                    'host'     => $env('DATA_MYSQL_HOST', self::DEFAULT_HOST),
-                    'port'     => (int) $env('DATA_MYSQL_PORT', '3306'),
-                    'dbname'   => $env('DATA_MYSQL_NAME', 'talon'),
-                    'username' => $env('DATA_MYSQL_USER', 'root'),
-                    'password' => $env('DATA_MYSQL_PASS'),
-                    'charset'  => $env('DATA_MYSQL_CHARSET', 'utf8mb4'),
-                ],
-                'pgsql' => [
-                    'host'     => $env('DATA_POSTGRES_HOST', self::DEFAULT_HOST),
-                    'port'     => (int) $env('DATA_POSTGRES_PORT', '5432'),
-                    'dbname'   => $env('DATA_POSTGRES_NAME', 'talon'),
-                    'username' => $env('DATA_POSTGRES_USER', 'postgres'),
-                    'password' => $env('DATA_POSTGRES_PASS'),
-                    'schema'   => $env('DATA_POSTGRES_SCHEMA'),
-                ],
-                'sqlite' => [
-                    'dbname' => $env('DATA_SQLITE_NAME', ':memory:'),
-                ],
-            ],
-            [
-                'host'  => $env('DATA_REDIS_HOST', self::DEFAULT_HOST),
-                'port'  => (int) $env('DATA_REDIS_PORT', '6379'),
-                'index' => (int) $env('DATA_REDIS_NAME', '0'),
-            ],
-            [
-                'host'   => $env('DATA_MEMCACHED_HOST', self::DEFAULT_HOST),
-                'port'   => (int) $env('DATA_MEMCACHED_PORT', '11211'),
-                'weight' => (int) $env('DATA_MEMCACHED_WEIGHT', '0'),
-            ],
             [
                 'dump_file'       => $env('dump_file'),
                 'initial_queries' => $env('initial_queries'),
             ],
             [],
-            [
-                'hosts' => array_filter(explode(',', $env('DATA_REDIS_CLUSTER_HOSTS'))),
-                'auth'  => $env('DATA_REDIS_CLUSTER_AUTH'),
-            ],
             $services,
         );
     }
@@ -204,31 +211,7 @@ final class Settings implements SettingsContract
             throw new UnknownDriver($driver);
         }
 
-        return $this->db[$driver] ?? [];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getMemcachedOptions(): array
-    {
-        return $this->memcached;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getRedisClusterOptions(): array
-    {
-        return $this->redisCluster;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getRedisOptions(): array
-    {
-        return $this->redis;
+        return $this->getServiceOptions($driver);
     }
 
     /**
@@ -236,7 +219,7 @@ final class Settings implements SettingsContract
      */
     public function getServiceOptions(string $name): array
     {
-        return $this->services[$name] ?? [];
+        return ($this->services[$name] ?? null)?->getOptions() ?? [];
     }
 
     public function cachePath(string $relative = ''): string
