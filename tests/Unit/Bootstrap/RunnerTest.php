@@ -18,6 +18,8 @@ use Phalcon\Talon\Bootstrap\Runner;
 use Phalcon\Talon\Bootstrap\Stage;
 use Phalcon\Talon\Settings;
 use Phalcon\Talon\Talon;
+use Phalcon\Talon\Tests\Fakes\Bootstrap\RecordingRunner;
+use Phalcon\Talon\Tests\Fakes\Bootstrap\XdebugForcedRunner;
 use PHPUnit\Framework\TestCase;
 
 use function extension_loaded;
@@ -43,30 +45,7 @@ final class RunnerTest extends TestCase
         $order    = new ArrayObject();
         $settings = Settings::fromArray(['root' => '/app']);
 
-        $runner = new class ($settings, $order) extends Runner {
-            /**
-             * @param ArrayObject<int, string> $order
-             */
-            public function __construct(Settings $settings, private ArrayObject $order)
-            {
-                parent::__construct($settings);
-            }
-
-            protected function initEnvironment(): void
-            {
-                $this->order->append('env');
-            }
-
-            protected function initDirectories(): void
-            {
-                $this->order->append('dirs');
-            }
-
-            protected function initSettings(): void
-            {
-                $this->order->append('settings');
-            }
-        };
+        $runner = new RecordingRunner($settings, $order);
 
         $runner
             ->before(Stage::Environment, function () use ($order): void {
@@ -121,6 +100,29 @@ final class RunnerTest extends TestCase
         $this->assertSame('1', ini_get('display_startup_errors'));
         $this->assertSame('en_US.utf-8', setlocale(LC_ALL, '0'));
         $this->assertSame('UTF-8', mb_internal_encoding());
+
+        if (extension_loaded('xdebug')) {
+            $this->assertSame('1', ini_get('xdebug.cli_color'));
+            $this->assertSame('On', ini_get('xdebug.dump_globals'));
+            $this->assertSame('On', ini_get('xdebug.show_local_vars'));
+            $this->assertSame('100', ini_get('xdebug.max_nesting_level'));
+            $this->assertSame('4', ini_get('xdebug.var_display_max_depth'));
+        }
+    }
+
+    public function testInitEnvironmentTunesXdebugIniWhenLoaded(): void
+    {
+        Talon::reset();
+        $settings = Settings::fromArray(['root' => dirname(__DIR__, 3)]);
+
+        // isExtensionLoaded() is faked here because the test suite doesn't
+        // reliably run with the xdebug extension loaded (coverage uses pcov),
+        // so this branch would otherwise never execute.
+        $runner = new XdebugForcedRunner($settings);
+
+        $result = $runner->boot();
+
+        $this->assertSame($settings, $result);
 
         if (extension_loaded('xdebug')) {
             $this->assertSame('1', ini_get('xdebug.cli_color'));

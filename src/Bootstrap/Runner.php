@@ -96,7 +96,7 @@ class Runner implements BootstrapContract
 
         clearstatcache();
 
-        if (extension_loaded('xdebug')) {
+        if ($this->isExtensionLoaded('xdebug')) {
             ini_set('xdebug.cli_color', '1');
             ini_set('xdebug.dump_globals', 'On');
             ini_set('xdebug.show_local_vars', 'On');
@@ -108,6 +108,11 @@ class Runner implements BootstrapContract
     protected function initSettings(): void
     {
         Talon::useSettings($this->settings);
+    }
+
+    protected function isExtensionLoaded(string $extension): bool
+    {
+        return extension_loaded($extension);
     }
 
     private function stage(Stage $stage, callable $default): void
