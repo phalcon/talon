@@ -152,9 +152,13 @@ $settings = Settings::fromArray([
                      'username' => 'root', 'password' => '', 'charset' => 'utf8mb4'],
         'sqlite' => ['dbname' => ':memory:'],
     ],
-    'redis'     => ['host' => '127.0.0.1', 'port' => 6379, 'index' => 0],
-    'memcached' => ['host' => '127.0.0.1', 'port' => 11211, 'weight' => 0],
-    'paths'     => ['output' => 'build/out'],   // optional directory overrides
+    'services' => [
+        'redis'        => ['host' => '127.0.0.1', 'port' => 6379, 'index' => 0],
+        'memcached'    => ['host' => '127.0.0.1', 'port' => 11211, 'weight' => 0],
+        'redisCluster' => ['hosts' => ['10.0.0.1:6379', '10.0.0.2:6379'], 'auth' => ''],
+        'beanstalk'    => ['host' => '127.0.0.1', 'port' => 11300],
+    ],
+    'paths' => ['output' => 'build/out'],   // optional directory overrides
 ]);
 
 // From environment variables (with sane defaults)
@@ -192,6 +196,23 @@ $settings->getDatabaseOptions('mysql'); // ['host'=>..., 'username'=>..., ...]
 
 Supported drivers: `mysql`, `pgsql`, `sqlite`. Any other driver throws
 `Exceptions\UnknownDriver`.
+
+### Service options
+
+Every other configured service (`redis`, `memcached`, `redisCluster`, `beanstalk`, and any
+service you add under the `services` key) is read through one generic accessor:
+
+```php
+$settings->getServiceOptions('redis');        // ['host'=>..., 'port'=>..., 'index'=>...]
+$settings->getServiceOptions('memcached');    // ['host'=>..., 'port'=>..., 'weight'=>...]
+$settings->getServiceOptions('redisCluster'); // ['hosts'=>[...], 'auth'=>...]
+$settings->getServiceOptions('beanstalk');    // ['host'=>..., 'port'=>...]
+$settings->getServiceOptions('unknown');      // [] - unknown names return empty, never throw
+```
+
+Unlike `getDatabaseOptions()`, an unrecognized name doesn't throw - it returns `[]`. This
+keeps `getServiceOptions()` a plain, permissive lookup, so adding a new service to the
+`services` config section never requires a new method on `Settings`.
 
 ---
 
@@ -491,7 +512,7 @@ These plain classes are usable anywhere, not just inside a `TestCase`.
 
 | Class | Key API |
 |-------|---------|
-| `Settings` | `fromArray()`, `fromEnv()`, `rootPath()`/`outputPath()`/…, `getDatabaseDsn()`, `getDatabaseOptions()`, `getRedisOptions()`, `getMemcachedOptions()`, `get()` |
+| `Settings` | `fromArray()`, `fromEnv()`, `rootPath()`/`outputPath()`/…, `getDatabaseDsn()`, `getDatabaseOptions()`, `getServiceOptions()`, `get()` |
 | `Environment` | `phalconAvailable()`, `viaExtension()`, `viaImplementation()` |
 | `Database\Connection` | `getPdo()`, `loadSchema($file)`, `select($table, $criteria)`, `execute($sql)` |
 | `Database\StatementSplitter` | `split($sql): array` - splits a dump into statements (handles `DELIMITER` and pgsql `$$` blocks) |
@@ -558,10 +579,14 @@ Read by `Settings::fromEnv()` (and the per-driver PHPUnit configs):
 |----------|---------|----------|
 | `driver` | `sqlite` | active DB driver |
 | `DATA_MYSQL_HOST` / `_PORT` / `_USER` / `_PASS` / `_NAME` / `_CHARSET` | 127.0.0.1 / 3306 / root / "" / talon / utf8mb4 | MySQL connection |
-| `DATA_POSTGRES_HOST` / `_PORT` / `_USER` / `_PASS` / `_NAME` | 127.0.0.1 / 5432 / postgres / "" / talon | PostgreSQL connection |
+| `DATA_POSTGRES_HOST` / `_PORT` / `_USER` / `_PASS` / `_NAME` / `_SCHEMA` | 127.0.0.1 / 5432 / postgres / "" / talon / "" | PostgreSQL connection |
 | `DATA_SQLITE_NAME` | `:memory:` | SQLite database |
 | `DATA_REDIS_HOST` / `_PORT` / `_NAME` | 127.0.0.1 / 6379 / 0 | Redis connection |
 | `DATA_MEMCACHED_HOST` / `_PORT` / `_WEIGHT` | 127.0.0.1 / 11211 / 0 | Memcached connection |
+| `DATA_REDIS_CLUSTER_HOSTS` / `_AUTH` | "" / "" | Redis Cluster connection (`HOSTS` is comma-separated) |
+| `DATA_BEANSTALKD_HOST` / `_PORT` | "" / "" | Beanstalkd connection |
+| `dump_file` | "" | schema file path, auto-loaded the first time a connection is built for a driver |
+| `initial_queries` | "" | SQL run immediately after connecting, before any other statement |
 
 Docker-only variables (`docker-compose.yml`): `PROJECT_PREFIX`, `PHP_VERSION`,
 `PHALCON_VARIANT`, `UID`, and `GID`. The backing services are gated by Compose
