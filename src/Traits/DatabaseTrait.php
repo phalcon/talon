@@ -74,6 +74,11 @@ trait DatabaseTrait
         return self::$connections[$driver];
     }
 
+    public function getDriver(): string
+    {
+        return $this->databaseDriver();
+    }
+
     /**
      * @param array<string, mixed> $criteria
      *

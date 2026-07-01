@@ -17,7 +17,9 @@ use Phalcon\Talon\Contracts\Settings as SettingsContract;
 use Phalcon\Talon\Exceptions\InvalidConfiguration;
 use Phalcon\Talon\Exceptions\UnknownDriver;
 
+use function array_filter;
 use function dirname;
+use function explode;
 use function file_exists;
 use function getcwd;
 use function getenv;
@@ -40,6 +42,7 @@ final class Settings implements SettingsContract
      * @param array<string, mixed>                $memcached
      * @param array<string, mixed>                $extra
      * @param array<string, mixed>                $paths
+     * @param array<string, mixed>                $redisCluster
      */
     private function __construct(
         private string $root,
@@ -48,6 +51,7 @@ final class Settings implements SettingsContract
         private array $memcached,
         private array $extra = [],
         private array $paths = [],
+        private array $redisCluster = [],
     ) {
     }
 
@@ -62,7 +66,14 @@ final class Settings implements SettingsContract
         }
 
         $extra = $config;
-        unset($extra['root'], $extra['db'], $extra['redis'], $extra['memcached'], $extra['paths']);
+        unset(
+            $extra['root'],
+            $extra['db'],
+            $extra['redis'],
+            $extra['memcached'],
+            $extra['paths'],
+            $extra['redisCluster']
+        );
 
         return new self(
             $root,
@@ -71,6 +82,7 @@ final class Settings implements SettingsContract
             self::section($config, 'memcached'),
             $extra,
             self::section($config, 'paths'),
+            self::section($config, 'redisCluster'),
         );
     }
 
@@ -105,6 +117,7 @@ final class Settings implements SettingsContract
                     'dbname'   => $env('DATA_POSTGRES_NAME', 'talon'),
                     'username' => $env('DATA_POSTGRES_USER', 'postgres'),
                     'password' => $env('DATA_POSTGRES_PASS'),
+                    'schema'   => $env('DATA_POSTGRES_SCHEMA'),
                 ],
                 'sqlite' => [
                     'dbname' => $env('DATA_SQLITE_NAME', ':memory:'),
@@ -123,6 +136,11 @@ final class Settings implements SettingsContract
             [
                 'dump_file'       => $env('dump_file'),
                 'initial_queries' => $env('initial_queries'),
+            ],
+            [],
+            [
+                'hosts' => array_filter(explode(',', $env('DATA_REDIS_CLUSTER_HOSTS'))),
+                'auth'  => $env('DATA_REDIS_CLUSTER_AUTH'),
             ],
         );
     }
@@ -173,6 +191,14 @@ final class Settings implements SettingsContract
     public function getMemcachedOptions(): array
     {
         return $this->memcached;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getRedisClusterOptions(): array
+    {
+        return $this->redisCluster;
     }
 
     /**

@@ -131,6 +131,43 @@ final class SettingsTest extends TestCase
         $this->assertSame('SET NAMES utf8;', $settings->get('initial_queries'));
     }
 
+    public function testFromEnvReadsRedisClusterOverrides(): void
+    {
+        $settings = Settings::fromEnv([
+            'root'                     => '/app',
+            'DATA_REDIS_CLUSTER_HOSTS' => '10.0.0.1:6379,10.0.0.2:6379',
+            'DATA_REDIS_CLUSTER_AUTH'  => 'secret',
+        ]);
+
+        $this->assertSame(
+            ['hosts' => ['10.0.0.1:6379', '10.0.0.2:6379'], 'auth' => 'secret'],
+            $settings->getRedisClusterOptions()
+        );
+    }
+
+    public function testFromEnvRedisClusterHostsEmptyWhenUnset(): void
+    {
+        $settings = Settings::fromEnv(['root' => '/app']);
+
+        $this->assertSame([], $settings->getRedisClusterOptions()['hosts']);
+    }
+
+    public function testGetRedisClusterOptionsFromArray(): void
+    {
+        $settings = Settings::fromArray([
+            'root'         => '/app',
+            'redisCluster' => [
+                'hosts' => ['10.0.0.1:6379', '10.0.0.2:6379'],
+                'auth'  => 'secret',
+            ],
+        ]);
+
+        $this->assertSame(
+            ['hosts' => ['10.0.0.1:6379', '10.0.0.2:6379'], 'auth' => 'secret'],
+            $settings->getRedisClusterOptions()
+        );
+    }
+
     public function testPgsqlDsn(): void
     {
         $settings = Settings::fromArray(
@@ -150,6 +187,25 @@ final class SettingsTest extends TestCase
             'pgsql:host=127.0.0.1;port=5432;dbname=talon',
             $settings->getDatabaseDsn('pgsql')
         );
+    }
+
+    public function testPgsqlOptionsIncludeSchema(): void
+    {
+        $settings = Settings::fromArray(
+            [
+                'root' => '/app',
+                'db'   => [
+                    'pgsql' => [
+                        'host'   => '127.0.0.1',
+                        'port'   => 5432,
+                        'dbname' => 'talon',
+                        'schema' => 'public',
+                    ]
+                ],
+            ]
+        );
+
+        $this->assertSame('public', $settings->getDatabaseOptions('pgsql')['schema']);
     }
 
     public function testGetReturnsExtraConfig(): void

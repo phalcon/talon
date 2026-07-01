@@ -71,4 +71,15 @@ final class DatabaseTraitTest extends TestCase
 
         $this->assertInDatabase('seeded_users', ['id' => 1]);
     }
+
+    public function testGetDriverReturnsCurrentEnvDriver(): void
+    {
+        putenv('driver=pgsql');
+
+        try {
+            $this->assertSame('pgsql', $this->getDriver());
+        } finally {
+            putenv('driver');
+        }
+    }
 }

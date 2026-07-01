@@ -32,6 +32,11 @@ interface Settings
     /**
      * @return array<string, mixed>
      */
+    public function getRedisClusterOptions(): array;
+
+    /**
+     * @return array<string, mixed>
+     */
     public function getRedisOptions(): array;
 
     public function cachePath(string $relative = ''): string;
