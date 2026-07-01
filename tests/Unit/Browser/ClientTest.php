@@ -15,6 +15,10 @@ namespace Phalcon\Talon\Tests\Unit\Browser;
 
 use Phalcon\Talon\Browser\Client;
 use Phalcon\Talon\Exceptions\InvalidApplication;
+use Phalcon\Talon\Tests\Fakes\App\FakeAppWithBareDi;
+use Phalcon\Talon\Tests\Fakes\App\FakeAppWithMalformedCookies;
+use Phalcon\Talon\Tests\Fakes\App\FakeAppWithNonCookiesService;
+use Phalcon\Talon\Tests\Fakes\App\FakeAppWithoutGetDi;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use Symfony\Component\BrowserKit\Exception\LogicException;
@@ -82,6 +86,38 @@ final class ClientTest extends TestCase
         $this->expectException(InvalidApplication::class);
 
         $client->request('GET', 'http://localhost/');
+    }
+
+    public function testAppWithoutGetDiSkipsCookieExtraction(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithoutGetDi());
+        $client->request('GET', 'http://localhost/');
+
+        $this->assertSame([], $client->getCookieJar()->all());
+    }
+
+    public function testBareDiWithoutCookiesServiceSkipsCookieExtraction(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithBareDi());
+        $client->request('GET', 'http://localhost/');
+
+        $this->assertSame([], $client->getCookieJar()->all());
+    }
+
+    public function testNonCookiesServiceSkipsCookieExtraction(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithNonCookiesService());
+        $client->request('GET', 'http://localhost/');
+
+        $this->assertSame([], $client->getCookieJar()->all());
+    }
+
+    public function testMalformedCookiesAreSkipped(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithMalformedCookies());
+        $client->request('GET', 'http://localhost/');
+
+        $this->assertSame([], $client->getCookieJar()->all());
     }
 
     private function client(): Client

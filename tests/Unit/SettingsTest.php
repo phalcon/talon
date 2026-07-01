@@ -55,6 +55,13 @@ final class SettingsTest extends TestCase
         $this->assertSame('/app/tests/_data', $settings->dataPath());
     }
 
+    public function testNonArrayPathsSectionFallsBackToDefaults(): void
+    {
+        $settings = Settings::fromArray(['root' => '/app', 'paths' => 'not-an-array']);
+
+        $this->assertSame('/app/tests/_output', $settings->outputPath());
+    }
+
     public function testFromEnvDiscoversRootFromComposerJson(): void
     {
         // The package ships a composer.json at its root; discovery must find it.
