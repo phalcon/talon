@@ -20,8 +20,14 @@ use Phalcon\Talon\Settings;
 use Phalcon\Talon\Talon;
 use PHPUnit\Framework\TestCase;
 
+use function extension_loaded;
+use function ini_get;
+use function mb_internal_encoding;
 use function rmdir;
+use function setlocale;
 use function uniqid;
+
+use const LC_ALL;
 
 final class RunnerTest extends TestCase
 {
@@ -102,5 +108,26 @@ final class RunnerTest extends TestCase
         rmdir($root . '/tests/_output');
         rmdir($root . '/tests');
         rmdir($root);
+    }
+
+    public function testInitEnvironmentSetsIniLocaleAndMbstringDefaults(): void
+    {
+        Talon::reset();
+        $settings = Settings::fromArray(['root' => '/app']);
+
+        Runner::for($settings)->boot();
+
+        $this->assertSame('1', ini_get('display_errors'));
+        $this->assertSame('1', ini_get('display_startup_errors'));
+        $this->assertSame('en_US.utf-8', setlocale(LC_ALL, '0'));
+        $this->assertSame('UTF-8', mb_internal_encoding());
+
+        if (extension_loaded('xdebug')) {
+            $this->assertSame('1', ini_get('xdebug.cli_color'));
+            $this->assertSame('On', ini_get('xdebug.dump_globals'));
+            $this->assertSame('On', ini_get('xdebug.show_local_vars'));
+            $this->assertSame('100', ini_get('xdebug.max_nesting_level'));
+            $this->assertSame('4', ini_get('xdebug.var_display_max_depth'));
+        }
     }
 }

@@ -17,12 +17,20 @@ use Phalcon\Talon\Contracts\Bootstrap as BootstrapContract;
 use Phalcon\Talon\Contracts\Settings;
 use Phalcon\Talon\Talon;
 
+use function clearstatcache;
 use function date_default_timezone_set;
 use function error_reporting;
+use function extension_loaded;
+use function function_exists;
+use function ini_set;
 use function is_dir;
+use function mb_internal_encoding;
+use function mb_substitute_character;
 use function mkdir;
+use function setlocale;
 
 use const E_ALL;
+use const LC_ALL;
 
 class Runner implements BootstrapContract
 {
@@ -77,6 +85,29 @@ class Runner implements BootstrapContract
     {
         error_reporting(E_ALL);
         date_default_timezone_set('UTC');
+
+        ini_set('display_errors', '1');
+        ini_set('display_startup_errors', '1');
+
+        setlocale(LC_ALL, 'en_US.utf-8');
+
+        if (function_exists('mb_internal_encoding')) {
+            mb_internal_encoding('utf-8');
+        }
+
+        if (function_exists('mb_substitute_character')) {
+            mb_substitute_character('none');
+        }
+
+        clearstatcache();
+
+        if (extension_loaded('xdebug')) {
+            ini_set('xdebug.cli_color', '1');
+            ini_set('xdebug.dump_globals', 'On');
+            ini_set('xdebug.show_local_vars', 'On');
+            ini_set('xdebug.max_nesting_level', '100');
+            ini_set('xdebug.var_display_max_depth', '4');
+        }
     }
 
     protected function initSettings(): void
