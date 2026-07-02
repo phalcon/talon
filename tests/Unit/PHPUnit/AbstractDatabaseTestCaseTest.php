@@ -44,4 +44,13 @@ final class AbstractDatabaseTestCaseTest extends AbstractDatabaseTestCase
     {
         $this->assertInDatabase('t', ['id' => 1]);
     }
+
+    public function testTearDownResetsConnections(): void
+    {
+        $first = $this->getConnection();
+
+        parent::tearDown();
+
+        $this->assertNotSame($first, $this->getConnection());
+    }
 }

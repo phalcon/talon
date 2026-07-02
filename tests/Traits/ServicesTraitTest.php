@@ -37,19 +37,20 @@ final class ServicesTraitTest extends TestCase
 
     public function testRedisRoundTrip(): void
     {
-        $this->setRedisKey('talon:test', 'value');
+        $key = 'talon:test:' . uniqid();
+        $this->setRedisKey($key, 'value');
 
-        $this->assertTrue($this->hasRedisKey('talon:test'));
-        $this->assertSame('value', $this->getRedisKey('talon:test'));
+        $this->assertTrue($this->hasRedisKey($key));
+        $this->assertSame('value', $this->getRedisKey($key));
     }
 
     public function testMemcachedRoundTrip(): void
     {
-        $this->clearMemcached();
-        $this->setMemcachedKey('talon_test', 'value');
+        $key = 'talon_test_' . uniqid();
+        $this->setMemcachedKey($key, 'value');
 
-        $this->assertTrue($this->hasMemcachedKey('talon_test'));
-        $this->assertSame('value', $this->getMemcachedKey('talon_test'));
+        $this->assertTrue($this->hasMemcachedKey($key));
+        $this->assertSame('value', $this->getMemcachedKey($key));
     }
 
     public function testHasMemcachedKeyWithStoredFalse(): void
@@ -68,8 +69,9 @@ final class ServicesTraitTest extends TestCase
 
     public function testSendRedisCommand(): void
     {
-        $this->sendRedisCommand('set', 'talon:cmd', 'sent');
+        $key = 'talon:cmd:' . uniqid();
+        $this->sendRedisCommand('set', $key, 'sent');
 
-        $this->assertSame('sent', $this->sendRedisCommand('get', 'talon:cmd'));
+        $this->assertSame('sent', $this->sendRedisCommand('get', $key));
     }
 }

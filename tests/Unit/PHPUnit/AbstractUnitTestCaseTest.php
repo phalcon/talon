@@ -18,6 +18,7 @@ use Phalcon\Di\FactoryDefault;
 use Phalcon\Talon\PHPUnit\AbstractUnitTestCase;
 use Phalcon\Talon\Tests\Fakes\MockSubject;
 use PHPUnit\Framework\SkippedTestSuiteError;
+use ReflectionMethod;
 
 final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
 {
@@ -103,5 +104,42 @@ final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
         $this->setUp();
 
         $this->assertNull(Di::getDefault());
+    }
+
+    public function testHelperMethodVisibility(): void
+    {
+        // Execute each helper so this test covers the mutated method bodies
+        // (infection only pairs tests with mutants via line coverage).
+        $this->checkExtensionIsLoaded('json');
+        $this->checkPhalconAvailable();
+        $this->mockWithConstructor(MockSubject::class, ['custom']);
+        $this->mockWithoutConstructor(MockSubject::class);
+
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'checkExtensionIsLoaded'))->isPublic());
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'checkPhalconAvailable'))->isPublic());
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'mockWithConstructor'))->isPublic());
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'mockWithoutConstructor'))->isPublic());
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'phalconAvailable'))->isProtected());
+    }
+
+    public function testMockStubsMultipleMethodOverrides(): void
+    {
+        $subject = $this->mockWithoutConstructor(MockSubject::class, [
+            'greeting' => static fn (): string => 'stubbed',
+            'value'    => 7,
+        ]);
+
+        $this->assertSame('stubbed', $subject->greeting());
+        $this->assertSame(7, $subject->value());
+    }
+
+    public function testMockWithConstructorNormalizesCtorArgKeys(): void
+    {
+        $plain = $this->mockWithConstructor(MockSubject::class, ['label' => 'custom']);
+        $this->assertSame('custom', $plain->tag);
+
+        $stubbed = $this->mockWithConstructor(MockSubject::class, ['label' => 'custom'], ['boot' => null]);
+        $this->assertSame('custom', $stubbed->tag);
+        $this->assertFalse($stubbed->booted);
     }
 }

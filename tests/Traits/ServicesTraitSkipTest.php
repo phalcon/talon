@@ -66,6 +66,19 @@ final class ServicesTraitSkipTest extends TestCase
         );
     }
 
+    public function testRedisSkipMessageContainsTheConnectionError(): void
+    {
+        try {
+            $this->getRedisKey('key');
+            $this->fail('Expected the test to be skipped');
+        } catch (SkippedWithMessageException $exception) {
+            $this->assertSame(
+                'Redis is not reachable: Connection refused',
+                $exception->getMessage()
+            );
+        }
+    }
+
     public function testRedisSkipsWhenPackageMissing(): void
     {
         $this->hasRedis = false;

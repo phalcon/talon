@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Unit\Bootstrap;
 
+use Phalcon\Config\Config;
 use Phalcon\Di\DiInterface;
 use Phalcon\Talon\Bootstrap\DiFactory;
 use Phalcon\Talon\Settings;
@@ -20,6 +21,17 @@ use PHPUnit\Framework\TestCase;
 
 final class DiFactoryTest extends TestCase
 {
+    public function testConfigServiceExposesTheRootPath(): void
+    {
+        $factory = new DiFactory(Settings::fromArray(['root' => '/app']));
+
+        $di = $factory->create();
+
+        $config = $di->getShared('config');
+        $this->assertInstanceOf(Config::class, $config);
+        $this->assertSame('/app', $config->get('root'));
+    }
+
     public function testCreatesDiWithConfig(): void
     {
         $factory = new DiFactory(Settings::fromArray(['root' => '/app']));

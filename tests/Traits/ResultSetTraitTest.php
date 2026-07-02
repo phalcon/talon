@@ -18,6 +18,7 @@ use Phalcon\Mvc\ModelInterface;
 use Phalcon\Talon\Exceptions\InvalidResultsetClass;
 use Phalcon\Talon\Traits\ResultSetTrait;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 final class ResultSetTraitTest extends TestCase
 {
@@ -65,6 +66,30 @@ final class ResultSetTraitTest extends TestCase
     {
         $this->expectException(InvalidResultsetClass::class);
         $this->mockResultSet([], self::class);
+    }
+
+    public function testMockResultSetIsPublic(): void
+    {
+        // The call covers the method body so infection pairs this test
+        // with the visibility mutant; the reflection check observes it.
+        $this->mockResultSet([]);
+
+        $this->assertTrue(
+            (new ReflectionMethod(self::class, 'mockResultSet'))->isPublic()
+        );
+    }
+
+    public function testSeekReadsTheInjectedRows(): void
+    {
+        $first  = $this->createMock(ModelInterface::class);
+        $second = $this->createMock(ModelInterface::class);
+        $mock   = $this->mockResultSet([$first, $second]);
+
+        // seek() is final and reads the injected rows property directly;
+        // without the injected rows it cannot position onto row 1.
+        $mock->seek(1);
+
+        $this->addToAssertionCount(1);
     }
 
     public function testAcceptsResultsetSubclass(): void
