@@ -37,11 +37,26 @@ class ProcessRunner
     {
         $environment = $env === [] ? null : [...getenv(), ...$env];
 
-        $process = proc_open($command, [STDIN, STDOUT, STDERR], $pipes, $cwd, $environment);
+        $process = $this->open($command, $cwd, $environment);
         if (!is_resource($process)) {
             return 1;
         }
 
         return proc_close($process);
+    }
+
+    /**
+     * A seam for tests: proc_open() with an array command cannot be forced
+     * to return false (spawn failures surface as exit 127), yet it may on
+     * fork/resource exhaustion - overriding this makes that branch testable.
+     *
+     * @param list<string>               $command
+     * @param array<string, string>|null $environment
+     *
+     * @return resource|false
+     */
+    protected function open(array $command, string $cwd, ?array $environment)
+    {
+        return proc_open($command, [STDIN, STDOUT, STDERR], $pipes, $cwd, $environment);
     }
 }

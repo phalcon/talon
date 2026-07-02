@@ -26,6 +26,18 @@ use const PHP_BINARY;
 
 final class ProcessRunnerTest extends TestCase
 {
+    public function testFailingToSpawnReportsExitCodeOne(): void
+    {
+        $runner = new class () extends ProcessRunner {
+            protected function open(array $command, string $cwd, ?array $environment)
+            {
+                return false;
+            }
+        };
+
+        $this->assertSame(1, $runner->run([PHP_BINARY, '-r', 'exit(0);'], dirname(__DIR__, 3)));
+    }
+
     public function testForwardsTheExitCode(): void
     {
         $code = (new ProcessRunner())->run([PHP_BINARY, '-r', 'exit(7);'], dirname(__DIR__, 3));
