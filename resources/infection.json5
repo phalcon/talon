@@ -15,8 +15,27 @@
     },
     "mutators": {
         "@default": true,
+        "ArrayItemRemoval": {
+            // STDIN in the descriptor spec is interactive TTY passthrough; a
+            // self-hosted test cannot observe it without owning the parent's
+            // stdio, which PHPUnit does.
+            "ignore": ["Phalcon\\Talon\\Cli\\ProcessRunner::run::40"]
+        },
+        "CastBool": {
+            "ignore": [
+                // Allowlisted flags parse to boolean true and the fallback is
+                // a bool literal; the cast is defensive only.
+                "Phalcon\\Talon\\Cli\\Input::wantsHelp",
+                "Phalcon\\Talon\\Cli\\Input::wantsVersion"
+            ]
+        },
         "CastString": {
             "ignore": [
+                // Discovered suite names are non-numeric filename stems and
+                // preg_replace with a fixed valid pattern never returns null;
+                // these casts only satisfy static analysis.
+                "Phalcon\\Talon\\Cli\\SuiteMap::discover::120",
+                "Phalcon\\Talon\\Cli\\SuiteMap::suiteNameFor",
                 // The (string) cast result is only used as an array key; PHP
                 // normalizes numeric-string keys back to int, so it is a no-op.
                 "Phalcon\\Talon\\Settings::sectionOfArrays",
@@ -26,6 +45,25 @@
                 // Phalcon Response::getContent() is declared ": string" (it
                 // casts internally); the cast is a no-op.
                 "Phalcon\\Talon\\Browser\\Client::normalizeResponse::160"
+            ]
+        },
+        "Coalesce": {
+            "ignore": [
+                // The long/short option keys are only ever true or absent,
+                // so the coalesce order is unobservable.
+                "Phalcon\\Talon\\Cli\\Input::wantsHelp",
+                "Phalcon\\Talon\\Cli\\Input::wantsVersion"
+            ]
+        },
+        "DecrementInteger": {
+            "ignore": [
+                // The suite list is never empty and exit codes are >= 0, so
+                // any negative initial max() seed is unobservable.
+                "Phalcon\\Talon\\Cli\\Command\\RunCommand::execute::66",
+                // proc_open with an array command returns a resource even for
+                // missing binaries (spawn failure surfaces as exit 127); the
+                // false branch guards exotic fork failures only.
+                "Phalcon\\Talon\\Cli\\ProcessRunner::run::42"
             ]
         },
         "FunctionCallRemoval": {
@@ -46,9 +84,17 @@
             "ignore": ["Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::99"]
         },
         "IncrementInteger": {
-            // Every accumulated query starts with the "\n" separator, so
-            // substr($query, 1, ...) only removes what trim() strips anyway.
-            "ignore": ["Phalcon\\Talon\\Database\\StatementSplitter::split::64"]
+            "ignore": [
+                // Every accumulated query starts with the "\n" separator, so
+                // substr($query, 1, ...) only removes what trim() strips anyway.
+                "Phalcon\\Talon\\Database\\StatementSplitter::split::64",
+                // Same unreachable proc_open-false branch as DecrementInteger.
+                "Phalcon\\Talon\\Cli\\ProcessRunner::run::42"
+            ]
+        },
+        "IntegerNegation": {
+            // Same unreachable proc_open-false branch.
+            "ignore": ["Phalcon\\Talon\\Cli\\ProcessRunner::run::42"]
         },
         "LogicalOrAllSubExprNegation": {
             "ignore": [
