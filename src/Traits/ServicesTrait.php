@@ -31,7 +31,10 @@ trait ServicesTrait
 {
     public function clearMemcached(): void
     {
-        $this->memcached()->flush();
+        $this->assertTrue(
+            $this->memcached()->flush(),
+            'Failed to flush Memcached'
+        );
     }
 
     public function doesNotHaveMemcachedKey(string $key): bool
@@ -56,7 +59,10 @@ trait ServicesTrait
 
     public function hasMemcachedKey(string $key): bool
     {
-        return $this->memcached()->get($key) !== false;
+        $client = $this->memcached();
+        $client->get($key);
+
+        return $client->getResultCode() !== Memcached::RES_NOTFOUND;
     }
 
     public function hasRedisKey(string $key): bool
@@ -71,12 +77,19 @@ trait ServicesTrait
 
     public function setMemcachedKey(string $key, mixed $value, int $expiration = 0): void
     {
-        $this->memcached()->set($key, $value, $expiration);
+        $this->assertTrue(
+            $this->memcached()->set($key, $value, $expiration),
+            "Failed to set the Memcached key '{$key}'"
+        );
     }
 
     public function setRedisKey(string $key, mixed $value): void
     {
-        $this->redis()->set($key, $value);
+        $this->assertSame(
+            'OK',
+            (string) $this->redis()->set($key, $value),
+            "Failed to set the Redis key '{$key}'"
+        );
     }
 
     protected function createMemcachedClient(): Memcached
