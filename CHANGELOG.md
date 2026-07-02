@@ -4,6 +4,8 @@
 
 ### Changed
 
+- The repo dogfoods its own runner: `composer test`/`test-coverage`/`test-coverage-html` and the CI database step now route through `bin/talon` (`php bin/talon run mysql pgsql` replaces the two explicit PHPUnit invocations). Infection still drives PHPUnit directly by design; the raw `vendor/bin/phpunit -c ...` invocations keep working as a fallback. [#5](https://github.com/phalcon/talon/issues/5)
+
 ### Added
 
 - `talon` CLI runner: `vendor/bin/talon run [suites...] [-- passthrough]` fronts PHPUnit per mapped suite, `talon suites` lists the map. Suites come from a root `talon.php` (per-suite `config`/`php`/`env`/`args`, global `php`/`env` merged in) or, with zero config, from discovered `phpunit*.xml` files (`phpunit.mysql.xml` -> `mysql`; `phpunit.xml.dist` -> `unit`, the default). Options forward to PHPUnit starting at the first option talon does not recognize (everything after `--` always forwards verbatim); the reserved name `all` runs every suite sequentially with a `max()` exit code; subprocess re-exec keeps per-suite ini flags (e.g. `extension=phalcon.so`) and env vars possible. Adds `phalcon/cli-options-parser` (^2.0) as a runtime dependency. [#5](https://github.com/phalcon/talon/issues/5)

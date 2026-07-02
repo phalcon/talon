@@ -68,7 +68,7 @@ Stop the stack with `docker compose down`.
 
 | Command | What it does |
 |---------|--------------|
-| `composer test` | the default suite (unit, functional, browser, sqlite) |
+| `composer test` | the default suite (unit, functional, browser, sqlite) via `bin/talon` |
 | `composer test-coverage` | Clover report → `tests/_output/coverage.xml` |
 | `composer test-coverage-html` | HTML report → `tests/_output/coverage` |
 | `composer test-mutation` | Infection mutation testing → `tests/_output/infection/` |
@@ -78,11 +78,13 @@ Stop the stack with `docker compose down`.
 | `composer cs-fixer` | PHP-CS-Fixer (dry-run) |
 | `composer cs-fixer-fix` | PHP-CS-Fixer (apply) |
 
-The MySQL and PostgreSQL suites use dedicated configs:
+The MySQL and PostgreSQL suites run through the repo's own runner (dogfooding
+the CLI); raw PHPUnit remains available as a fallback:
 
 ```bash
+docker compose run --rm app php bin/talon run mysql pgsql
+# fallback, bypassing the runner:
 docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.mysql.xml
-docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.pgsql.xml
 ```
 
 ## Before opening a pull request
