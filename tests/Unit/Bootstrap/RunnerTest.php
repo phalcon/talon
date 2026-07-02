@@ -89,7 +89,10 @@ final class RunnerTest extends TestCase
     public function testBootCreatesTheOutputDirectory(): void
     {
         Talon::reset();
-        $root = dirname(__DIR__, 2) . '/_output/runner-' . uniqid();
+        // build/ is gitignored and outside the analyzers' scan tree, so
+        // mutation-run debris (crashed mutants skip cleanup, sometimes with
+        // mutated unreadable permissions) cannot break phpstan/phpcs.
+        $root = dirname(__DIR__, 3) . '/build/runner-' . uniqid();
         $settings = Settings::fromArray(['root' => $root]);
 
         Runner::for($settings)->boot();
@@ -103,7 +106,8 @@ final class RunnerTest extends TestCase
 
     public function testInitDirectoriesAppliesTheConfiguredPermissions(): void
     {
-        $root     = dirname(__DIR__, 2) . '/_output/' . uniqid('runner-', true);
+        // See testBootCreatesTheOutputDirectory for why build/ hosts this.
+        $root     = dirname(__DIR__, 3) . '/build/' . uniqid('runner-', true);
         $settings = Settings::fromArray(['root' => $root]);
 
         $runner = new class ($settings) extends Runner {
