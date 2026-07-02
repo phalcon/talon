@@ -199,6 +199,49 @@ Talon::boot(Settings::fromArray([
 ]));
 ```
 
+## Command line runner
+
+`vendor/bin/talon` fronts PHPUnit per mapped suite:
+
+```bash
+vendor/bin/talon run            # default suite (unit)
+vendor/bin/talon run mysql
+vendor/bin/talon run mysql pgsql
+vendor/bin/talon run all        # every mapped suite, sequentially
+vendor/bin/talon suites         # list mapped suites
+```
+
+With zero configuration, suites are discovered from `phpunit*.xml` files in the project
+root and `resources/` (`phpunit.mysql.xml` becomes `mysql`; `phpunit.xml.dist` becomes
+`unit`, the default). Projects that need php ini flags or env vars declare a `talon.php`
+at the project root:
+
+```php
+return [
+    'php'     => ['extension=ext/modules/phalcon.so'],   // global ini flags, optional
+    'suites'  => [
+        'unit'   => ['config' => 'resources/phpunit.xml.dist'],
+        'mysql'  => ['config' => 'resources/phpunit.mysql.xml'],
+        'pgsql'  => ['config' => 'resources/phpunit.pgsql.xml'],
+        'sqlite' => ['config' => 'resources/phpunit.sqlite.xml'],
+    ],
+    'default' => 'unit',
+];
+```
+
+Per-suite keys: `config` (required), `php` (extra ini flags), `env` (extra env vars) and
+`args` (default PHPUnit arguments) — suite entries merge over the global `php`/`env`.
+Options are forwarded to PHPUnit starting at the first option talon does not recognize
+itself, and everything after `--` is always forwarded verbatim:
+
+```bash
+vendor/bin/talon run unit -- --filter FooTest --testdox
+```
+
+Each suite runs as its own subprocess (per-suite extensions and env vars work), a single
+suite's exit code is forwarded verbatim, and multiple suites exit with the maximum code
+after a per-suite summary.
+
 ## Beyond PHPUnit
 
 The traits are the core public API and carry no PHPUnit base-class requirement for their

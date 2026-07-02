@@ -96,9 +96,7 @@ jobs:
         run: composer test
 
       - name: Database drivers
-        run: |
-          vendor/bin/phpunit -c resources/phpunit.mysql.xml
-          vendor/bin/phpunit -c resources/phpunit.pgsql.xml
+        run: php bin/talon run mysql pgsql
 
       # Runtime-independent: run once on a single (v5) cell rather than all ten.
       - name: Static analysis, coding standard, layout
