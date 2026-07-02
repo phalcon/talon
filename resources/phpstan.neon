@@ -5,6 +5,8 @@ parameters:
         - %currentWorkingDirectory%/tests
     excludePaths:
         - %currentWorkingDirectory%/tests/Fakes
+        # Mutation runs leave crash debris here that breaks traversal.
+        - %currentWorkingDirectory%/tests/_output
     bootstrapFiles:
         - %currentWorkingDirectory%/vendor/autoload.php
     treatPhpDocTypesAsCertain: false
