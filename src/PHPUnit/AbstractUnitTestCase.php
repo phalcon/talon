@@ -68,9 +68,9 @@ abstract class AbstractUnitTestCase extends TestCase
      *
      * @template T of object
      *
-     * @param class-string<T>      $class
-     * @param array<int, mixed>    $ctorArgs
-     * @param array<string, mixed> $overrides
+     * @param class-string<T>          $class
+     * @param array<array-key, mixed>  $ctorArgs
+     * @param array<string, mixed>     $overrides
      *
      * @return T
      */
@@ -110,9 +110,9 @@ abstract class AbstractUnitTestCase extends TestCase
     }
 
     /**
-     * @param class-string         $class
-     * @param array<string, mixed> $overrides
-     * @param array<int, mixed>    $ctorArgs
+     * @param class-string            $class
+     * @param array<string, mixed>    $overrides
+     * @param array<array-key, mixed> $ctorArgs
      */
     private function buildMock(string $class, array $overrides, bool $withConstructor, array $ctorArgs): object
     {
