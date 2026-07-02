@@ -52,6 +52,14 @@ final class ServicesTraitTest extends TestCase
         $this->assertSame('value', $this->getMemcachedKey('talon_test'));
     }
 
+    public function testHasMemcachedKeyWithStoredFalse(): void
+    {
+        $key = 'talon_false_' . uniqid();
+        $this->setMemcachedKey($key, false);
+
+        $this->assertTrue($this->hasMemcachedKey($key));
+    }
+
     public function testDoesNotHaveKeys(): void
     {
         $this->assertTrue($this->doesNotHaveRedisKey('talon:absent:' . uniqid()));
