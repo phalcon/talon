@@ -72,20 +72,32 @@ trait FileSystemTrait
         foreach ($iterator as $fileInfo) {
             $path = (string) $fileInfo->getRealPath();
             if ($fileInfo->isDir()) {
-                rmdir($path);
+                $this->assertTrue(
+                    @rmdir($path),
+                    "Failed to delete the directory '{$path}'"
+                );
 
                 continue;
             }
-            unlink($path);
+            $this->assertTrue(
+                @unlink($path),
+                "Failed to delete the file '{$path}'"
+            );
         }
 
-        rmdir($directory);
+        $this->assertTrue(
+            @rmdir($directory),
+            "Failed to delete the directory '{$directory}'"
+        );
     }
 
     public function safeDeleteFile(string $filename): void
     {
         if (file_exists($filename) && is_file($filename)) {
-            unlink($filename);
+            $this->assertTrue(
+                @unlink($filename),
+                "Failed to delete the file '{$filename}'"
+            );
         }
     }
 }

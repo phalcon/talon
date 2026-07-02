@@ -14,11 +14,15 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Tests\Traits;
 
 use Phalcon\Talon\Traits\FileSystemTrait;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\TestCase;
 
+use function chmod;
 use function file_put_contents;
 use function mkdir;
+use function rmdir;
 use function uniqid;
+use function unlink;
 
 final class FileSystemTraitTest extends TestCase
 {
@@ -28,6 +32,25 @@ final class FileSystemTraitTest extends TestCase
     {
         $this->assertSame('/app/', $this->getDirSeparator('/app'));
         $this->assertStringEndsWith('.log', $this->getNewFileName('pre'));
+    }
+
+    public function testSafeDeleteDirectoryFailsWhenDeleteFails(): void
+    {
+        $dir = __DIR__ . '/../_output/locked-dir-' . uniqid();
+        mkdir($dir . '/nested', 0o777, true);
+        file_put_contents($dir . '/nested/undeletable.txt', 'x');
+        chmod($dir . '/nested', 0o555);
+
+        try {
+            $this->expectException(AssertionFailedError::class);
+
+            $this->safeDeleteDirectory($dir);
+        } finally {
+            chmod($dir . '/nested', 0o777);
+            unlink($dir . '/nested/undeletable.txt');
+            rmdir($dir . '/nested');
+            rmdir($dir);
+        }
     }
 
     public function testSafeDeleteDirectoryIgnoresMissing(): void
@@ -60,5 +83,24 @@ final class FileSystemTraitTest extends TestCase
 
         $this->safeDeleteFile($file);
         $this->assertFileDoesNotExist($file);
+    }
+
+    public function testSafeDeleteFileFailsWhenUnlinkFails(): void
+    {
+        $dir  = __DIR__ . '/../_output/locked-' . uniqid();
+        $file = $dir . '/undeletable.txt';
+        mkdir($dir, 0o777, true);
+        file_put_contents($file, 'x');
+        chmod($dir, 0o555);
+
+        try {
+            $this->expectException(AssertionFailedError::class);
+
+            $this->safeDeleteFile($file);
+        } finally {
+            chmod($dir, 0o777);
+            unlink($file);
+            rmdir($dir);
+        }
     }
 }

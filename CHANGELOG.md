@@ -8,6 +8,10 @@
 
 ### Fixed
 
+- `ServicesTrait::setMemcachedKey()`, `setRedisKey()`, and `clearMemcached()` now assert the backing operation succeeded (a failed `Memcached::set()`/`flush()` or a non-`OK` Redis `SET` reply reports as a test failure with the key in the message) instead of silently discarding the result - a failed seed write could previously let a test pass without exercising its intent. [#10](https://github.com/phalcon/talon/issues/10)
+- `ServicesTrait::hasMemcachedKey()` (and `doesNotHaveMemcachedKey()`) now checks `Memcached::getResultCode()` against `RES_NOTFOUND`, so a stored literal `false` is correctly reported as present - previously indistinguishable from a missing key. [#10](https://github.com/phalcon/talon/issues/10)
+- `FileSystemTrait::safeDeleteFile()` and `safeDeleteDirectory()` still tolerate a missing target, but when it exists every `unlink()`/`rmdir()` is now asserted - a failed delete reports as a clean test failure with the path (instead of a PHP warning) rather than silently leaking state into subsequent tests. [#10](https://github.com/phalcon/talon/issues/10)
+
 ### Removed
 
 ## [0.5.0](https://github.com/phalcon/talon/releases/tag/v0.5.0) (2026-07-01)
