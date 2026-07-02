@@ -5,3 +5,5 @@
 !/tests/_output/.gitkeep
 .phpunit.result.cache
 .env
+# Core dumps from mutants that crash the PHP process during mutation runs.
+/core.*

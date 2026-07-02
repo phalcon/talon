@@ -6,8 +6,11 @@
 
 ### Added
 
+- Infection mutation testing: `infection/infection` (^0.29) as a dev dependency, configured via `resources/infection.json5` (source `src/`, `@default` mutators, logs and temp files under `tests/_output/infection/`), with a `composer test-mutation` script and a report-only step in the CI coverage job. The suite was hardened until the mutation score plateaued at 99% MSI / 99% covered MSI under the ext-phalcon (v5) test image - the five surviving mutants are provider-specific and are killed under the phalcon/phalcon (v6) provider the CI step runs on. Every config-level mutator ignore is individually justified in `resources/infection.json5`. [#7](https://github.com/phalcon/talon/issues/7)
+
 ### Fixed
 
+- `AbstractUnitTestCase::mockWithConstructor()`'s `$ctorArgs` docblock type widened from `array<int, mixed>` to `array<array-key, mixed>` - the implementation always normalized string-keyed arguments via `array_values()`; the annotation now matches. No behavior change - static-analysis-only fix. [#7](https://github.com/phalcon/talon/issues/7)
 - `ServicesTrait::setMemcachedKey()`, `setRedisKey()`, and `clearMemcached()` now assert the backing operation succeeded (a failed `Memcached::set()`/`flush()` or a non-`OK` Redis `SET` reply reports as a test failure with the key in the message) instead of silently discarding the result - a failed seed write could previously let a test pass without exercising its intent. [#10](https://github.com/phalcon/talon/issues/10)
 - `ServicesTrait::hasMemcachedKey()` (and `doesNotHaveMemcachedKey()`) now checks `Memcached::getResultCode()` against `RES_NOTFOUND`, so a stored literal `false` is correctly reported as present - previously indistinguishable from a missing key. [#10](https://github.com/phalcon/talon/issues/10)
 - `FileSystemTrait::safeDeleteFile()` and `safeDeleteDirectory()` still tolerate a missing target, but when it exists every `unlink()`/`rmdir()` is now asserted - a failed delete reports as a clean test failure with the path (instead of a PHP warning) rather than silently leaking state into subsequent tests. [#10](https://github.com/phalcon/talon/issues/10)

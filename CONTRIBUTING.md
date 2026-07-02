@@ -71,6 +71,7 @@ Stop the stack with `docker compose down`.
 | `composer test` | the default suite (unit, functional, browser, sqlite) |
 | `composer test-coverage` | Clover report → `tests/_output/coverage.xml` |
 | `composer test-coverage-html` | HTML report → `tests/_output/coverage` |
+| `composer test-mutation` | Infection mutation testing → `tests/_output/infection/` |
 | `composer analyze` | PHPStan (max level) |
 | `composer cs` | PHP_CodeSniffer (PSR-12) |
 | `composer cs-fix` | PHPCBF (apply coding-standard fixes) |
