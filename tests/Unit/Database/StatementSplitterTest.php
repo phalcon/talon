@@ -49,4 +49,38 @@ final class StatementSplitterTest extends TestCase
 
         $this->assertSame(['CREATE A', 'SELECT 1'], StatementSplitter::split($sql));
     }
+
+    public function testBalancedDollarQuotedStatementEndsAtDelimiter(): void
+    {
+        $sql = "CREATE FUNCTION f() AS \$\$\nBEGIN RETURN 1; END;\n\$\$;\nSELECT 2;\n";
+
+        $this->assertSame(
+            ["CREATE FUNCTION f() AS \$\$\nBEGIN RETURN 1; END;\n\$\$", 'SELECT 2'],
+            StatementSplitter::split($sql)
+        );
+    }
+
+    public function testHyphenAsSecondCharacterIsNotAComment(): void
+    {
+        $this->assertSame(['D-1'], StatementSplitter::split("D-1;\n"));
+    }
+
+    public function testIndentedCommentLinesAreSkipped(): void
+    {
+        $sql = "  -- indented comment\nSELECT 1;\n";
+
+        $this->assertSame(['SELECT 1'], StatementSplitter::split($sql));
+    }
+
+    public function testLowercaseDelimiterDirectiveIsHonored(): void
+    {
+        $sql = "delimiter ;;\nCREATE A;;\ndelimiter ;\nSELECT 1;\n";
+
+        $this->assertSame(['CREATE A', 'SELECT 1'], StatementSplitter::split($sql));
+    }
+
+    public function testMultiLineStatementKeepsLineBreaks(): void
+    {
+        $this->assertSame(["SELECT\n1"], StatementSplitter::split("SELECT\n1;\n"));
+    }
 }

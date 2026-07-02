@@ -41,10 +41,58 @@ final class ConnectionTest extends TestCase
         $this->assertCount(1, $conn->select('users', ['email' => 'a@b.c']));
     }
 
+    public function testLoadSchemaWithUnreadableFileLoadsNothing(): void
+    {
+        // file_exists() passes but file_get_contents() returns false; the
+        // (string) cast must turn that into "no statements", not a TypeError.
+        $file = dirname(__DIR__, 3) . '/tests/_output/unreadable-' . uniqid() . '.sql';
+        file_put_contents($file, 'CREATE TABLE hidden (id INTEGER);');
+        chmod($file, 0o000);
+
+        $conn = $this->sqlite();
+
+        try {
+            @$conn->loadSchema($file);
+
+            $this->assertSame([], $conn->select('sqlite_master'));
+        } finally {
+            chmod($file, 0o644);
+            unlink($file);
+        }
+    }
+
     public function testMissingSchemaFileThrows(): void
     {
         $this->expectException(SchemaFileNotFound::class);
         $this->sqlite()->loadSchema('/does/not/exist.sql');
+    }
+
+    public function testNonStringCredentialsAreIgnored(): void
+    {
+        $settings = Settings::fromArray([
+            'root' => '/app',
+            'db'   => [
+                'sqlite' => [
+                    'dbname'   => ':memory:',
+                    'username' => ['not-a-string'],
+                    'password' => ['not-a-string'],
+                ],
+            ],
+        ]);
+
+        $conn = new Connection($settings, 'sqlite');
+
+        $this->assertSame([], $conn->select('sqlite_master'));
+    }
+
+    public function testSelectReturnsAllMatchingRows(): void
+    {
+        $conn = $this->sqlite();
+        $conn->execute('CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT)');
+        $conn->execute("INSERT INTO users VALUES (1, 'a@b.c')");
+        $conn->execute("INSERT INTO users VALUES (2, 'a@b.c')");
+
+        $this->assertCount(2, $conn->select('users', ['email' => 'a@b.c']));
     }
 
     public function testInitialQueriesRunAfterConnect(): void

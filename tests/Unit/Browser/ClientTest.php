@@ -18,6 +18,7 @@ use Phalcon\Talon\Exceptions\InvalidApplication;
 use Phalcon\Talon\Tests\Fakes\App\FakeAppWithBareDi;
 use Phalcon\Talon\Tests\Fakes\App\FakeAppWithMalformedCookies;
 use Phalcon\Talon\Tests\Fakes\App\FakeAppWithNonCookiesService;
+use Phalcon\Talon\Tests\Fakes\App\FakeAppWithNonDiContainer;
 use Phalcon\Talon\Tests\Fakes\App\FakeAppWithoutGetDi;
 use PHPUnit\Framework\TestCase;
 use stdClass;
@@ -117,7 +118,100 @@ final class ClientTest extends TestCase
         $client = new Client(static fn () => new FakeAppWithMalformedCookies());
         $client->request('GET', 'http://localhost/');
 
+        $this->assertNull($client->getCookieJar()->get('malformed'));
+        $this->assertNull($client->getCookieJar()->get('nonScalar'));
+    }
+
+    public function testCookieVariantsSurviveExtraction(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithMalformedCookies());
+        $client->request('GET', 'http://localhost/');
+
+        $jar = $client->getCookieJar();
+
+        // Kills continue->break on the malformed-cookie guards and the
+        // rawurlencode cast: the int-valued cookie sits after them.
+        $answer = $jar->get('answer');
+        $this->assertNotNull($answer);
+        $this->assertSame('42', $answer->getValue());
+
+        // A path-scoped cookie is bucketed under its own path, not '/'.
+        $this->assertNull($jar->get('scoped'));
+        $scoped = $jar->get('scoped', '/sub');
+        $this->assertNotNull($scoped);
+        $this->assertSame('v', $scoped->getValue());
+
+        // Expiration 0 must produce a session cookie without an Expires attribute.
+        $sess = $jar->get('sess');
+        $this->assertNotNull($sess);
+        $this->assertNull($sess->getExpiresTime());
+    }
+
+    public function testMaxRedirectsIsCapped(): void
+    {
+        $this->assertSame(20, $this->client()->getMaxRedirects());
+    }
+
+    public function testNonDiContainerSkipsCookieExtraction(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithNonDiContainer());
+        $client->request('GET', 'http://localhost/');
+
         $this->assertSame([], $client->getCookieJar()->all());
+    }
+
+    public function testQueryStringReachesTheApp(): void
+    {
+        $client  = $this->client();
+        $crawler = $client->request('GET', 'http://localhost/browser/query?q=needle');
+
+        $this->assertStringContainsString('uri=/browser/query?q=needle|', $crawler->text());
+        $this->assertStringContainsString('|got=needle', $crawler->text());
+    }
+
+    public function testRequestWithoutAPathDispatchesTheEmptyPath(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithBareDi());
+        $client->request('GET', 'http://localhost');
+
+        $this->assertSame('', $client->getInternalResponse()->getContent());
+    }
+
+    public function testResponseDefaultsAreApplied(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithBareDi());
+        $client->request('GET', 'http://localhost/');
+
+        $response = $client->getInternalResponse();
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('text/html; charset=UTF-8', $response->getHeader('Content-Type'));
+    }
+
+    public function testSetCookieHeaderUsesGmtSuffixedExpires(): void
+    {
+        $client = $this->client();
+        $client->request('GET', 'http://localhost/browser/cookieService');
+
+        $header = $client->getInternalResponse()->getHeader('Set-Cookie');
+        $this->assertIsString($header);
+        $this->assertMatchesRegularExpression(
+            '#^svc=value; Path=/; Expires=[A-Z][a-z]{2}, \d{2}-[A-Z][a-z]{2}-\d{4} \d{2}:\d{2}:\d{2} GMT$#',
+            $header
+        );
+    }
+
+    public function testSuperglobalsAreRestoredAfterDispatch(): void
+    {
+        $backup = $_GET;
+        $_GET   = ['sentinel' => 'before'];
+
+        try {
+            $this->client()->request('GET', 'http://localhost/browser/landed');
+
+            $this->assertSame(['sentinel' => 'before'], $_GET);
+        } finally {
+            $_GET = $backup;
+        }
     }
 
     private function client(): Client

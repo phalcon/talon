@@ -18,6 +18,7 @@ use Phalcon\Talon\Talon;
 use Phalcon\Talon\Traits\DatabaseTrait;
 use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 use function dirname;
 
@@ -70,6 +71,37 @@ final class DatabaseTraitTest extends TestCase
         self::resetConnections();
 
         $this->assertInDatabase('seeded_users', ['id' => 1]);
+    }
+
+    public function testPublicApiVisibility(): void
+    {
+        // Execute each helper so this test covers the mutated method bodies
+        // (infection pairs tests with mutants via line coverage).
+        self::resetConnections();
+        $this->getSettings();
+        $this->getDriver();
+        $this->getConnection()->execute('CREATE TABLE vis (id INTEGER)');
+        $this->getConnection()->execute('INSERT INTO vis VALUES (1)');
+        $this->assertInDatabase('vis', ['id' => 1]);
+        $this->assertNotInDatabase('vis', ['id' => 2]);
+        $this->assertNotEmpty($this->getFromDatabase('vis', ['id' => 1]));
+
+        foreach (
+            [
+                'assertInDatabase',
+                'assertNotInDatabase',
+                'getConnection',
+                'getDriver',
+                'getFromDatabase',
+                'getSettings',
+                'resetConnections',
+            ] as $method
+        ) {
+            $this->assertTrue(
+                (new ReflectionMethod(self::class, $method))->isPublic(),
+                $method
+            );
+        }
     }
 
     public function testGetDriverReturnsCurrentEnvDriver(): void

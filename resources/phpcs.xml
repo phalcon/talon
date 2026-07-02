@@ -6,4 +6,6 @@
     <rule ref="PSR12"/>
     <file>../src</file>
     <file>../tests</file>
+    <!-- Mutation runs leave crash debris here that breaks traversal. -->
+    <exclude-pattern>*/tests/_output/*</exclude-pattern>
 </ruleset>

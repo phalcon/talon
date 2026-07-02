@@ -30,6 +30,16 @@ final class EnvironmentTest extends TestCase
         );
     }
 
+    public function testProvidersAreMutuallyExclusive(): void
+    {
+        // Exactly one provider must report true in the test image,
+        // regardless of whether phalcon is the extension or the PHP package.
+        $this->assertNotSame(
+            Environment::viaExtension(),
+            Environment::viaImplementation()
+        );
+    }
+
     public function testProvidersMatchAvailability(): void
     {
         // Evaluate each into a variable so neither is short-circuited away.

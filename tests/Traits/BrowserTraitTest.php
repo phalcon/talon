@@ -16,6 +16,8 @@ namespace Phalcon\Talon\Tests\Traits;
 use Phalcon\Talon\Exceptions\ElementNotFound;
 use Phalcon\Talon\Exceptions\ResponseNotDispatched;
 use Phalcon\Talon\PHPUnit\AbstractBrowserTestCase;
+use PHPUnit\Framework\AssertionFailedError;
+use Symfony\Component\BrowserKit\Request;
 
 final class BrowserTraitTest extends AbstractBrowserTestCase
 {
@@ -127,6 +129,7 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->visitPage('/browser/menu');
 
         $this->expectException(ElementNotFound::class);
+        $this->expectExceptionMessage('Could not find link "Nonexistent" on the page');
 
         $this->clickLink('Nonexistent');
     }
@@ -143,6 +146,7 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->visitPage('/browser/landed');
 
         $this->expectException(ElementNotFound::class);
+        $this->expectExceptionMessage('Could not find button "Save" on the page');
 
         $this->pressButton('Save');
     }
@@ -162,5 +166,55 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->expectException(ElementNotFound::class);
 
         $this->fillField('name', 'value');
+    }
+
+    public function testAssertPageMissingTextFailsWhenTextIsPresent(): void
+    {
+        $this->visitPage('/browser/landed');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertPageMissingText('landed ok');
+    }
+
+    public function testPressButtonByParenthesizedXPath(): void
+    {
+        $this->visitPage('/browser/search');
+        $this->pressButton('(//button)[1]');
+
+        $this->assertPageContainsText('landed ok');
+    }
+
+    public function testPressButtonDoesNotTreatPlainLabelsAsXPath(): void
+    {
+        // 'button' is a valid XPath that would match the form's button element;
+        // a plain label must never be evaluated as XPath.
+        $this->visitPage('/browser/search');
+
+        $this->expectException(ElementNotFound::class);
+
+        $this->pressButton('button');
+    }
+
+    public function testPressButtonWithUnmatchedXPathThrows(): void
+    {
+        $this->visitPage('/browser/search');
+
+        $this->expectException(ElementNotFound::class);
+
+        $this->pressButton('//form/input[@type="submit"]');
+    }
+
+    public function testVisitPageAlwaysTargetsLocalhost(): void
+    {
+        // Even with another default host configured, visitPage() pins the
+        // request (and so cookie bucketing) to http://localhost.
+        $this->browser()->setServerParameter('HTTP_HOST', 'other.example');
+
+        $this->visitPage('/browser/landed');
+
+        $request = $this->browser()->getRequest();
+        $this->assertInstanceOf(Request::class, $request);
+        $this->assertSame('http://localhost/browser/landed', $request->getUri());
     }
 }

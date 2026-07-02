@@ -318,4 +318,140 @@ final class SettingsTest extends TestCase
 
         $this->assertSame([], $settings->getServiceOptions('redis'));
     }
+
+    public function testDirJoinsOverrideAndRelativeWithoutDuplicateSlashes(): void
+    {
+        $settings = Settings::fromArray([
+            'root'  => '/app',
+            'paths' => ['output' => 'build/out/'],
+        ]);
+
+        $this->assertSame('/app/build/out/run.log', $settings->outputPath('/run.log'));
+    }
+
+    public function testFromArrayCastsIntegerServiceKeys(): void
+    {
+        $settings = Settings::fromArray([
+            'root'     => '/app',
+            'services' => [0 => ['host' => 'indexed-host']],
+        ]);
+
+        $this->assertSame(['host' => 'indexed-host'], $settings->getServiceOptions('0'));
+    }
+
+    public function testFromArrayKeepsAllDbDrivers(): void
+    {
+        $settings = Settings::fromArray([
+            'root' => '/app',
+            'db'   => [
+                'mysql'  => ['host' => '127.0.0.1', 'port' => 3306, 'dbname' => 'talon'],
+                'sqlite' => ['dbname' => '/data/db.sqlite'],
+            ],
+        ]);
+
+        $this->assertSame('sqlite:/data/db.sqlite', $settings->getDatabaseDsn('sqlite'));
+    }
+
+    public function testFromArrayKeepsAllServices(): void
+    {
+        $settings = Settings::fromArray([
+            'root'     => '/app',
+            'services' => [
+                'first'  => ['host' => 'one'],
+                'second' => ['host' => 'two'],
+            ],
+        ]);
+
+        $this->assertSame(['host' => 'one'], $settings->getServiceOptions('first'));
+        $this->assertSame(['host' => 'two'], $settings->getServiceOptions('second'));
+    }
+
+    public function testFromEnvBuildsDbServiceOptionsFromOverrides(): void
+    {
+        $settings = Settings::fromEnv([
+            'root'                 => '/app',
+            'DATA_MYSQL_HOST'      => 'mysql-host',
+            'DATA_MYSQL_PORT'      => 3307,
+            'DATA_MYSQL_NAME'      => 'mysql-db',
+            'DATA_MYSQL_USER'      => 'mysql-user',
+            'DATA_MYSQL_PASS'      => 'mysql-pass',
+            'DATA_MYSQL_CHARSET'   => 'utf8',
+            'DATA_POSTGRES_HOST'   => 'pgsql-host',
+            'DATA_POSTGRES_PORT'   => '5433',
+            'DATA_POSTGRES_NAME'   => 'pgsql-db',
+            'DATA_POSTGRES_USER'   => 'pgsql-user',
+            'DATA_POSTGRES_PASS'   => 'pgsql-pass',
+            'DATA_POSTGRES_SCHEMA' => 'pgsql-schema',
+            'DATA_SQLITE_NAME'     => '/data/db.sqlite',
+        ]);
+
+        $this->assertSame(
+            [
+                'host'     => 'mysql-host',
+                'port'     => 3307,
+                'dbname'   => 'mysql-db',
+                'username' => 'mysql-user',
+                'password' => 'mysql-pass',
+                'charset'  => 'utf8',
+            ],
+            $settings->getServiceOptions('mysql')
+        );
+        $this->assertSame(
+            [
+                'host'     => 'pgsql-host',
+                'port'     => 5433,
+                'dbname'   => 'pgsql-db',
+                'username' => 'pgsql-user',
+                'password' => 'pgsql-pass',
+                'schema'   => 'pgsql-schema',
+            ],
+            $settings->getServiceOptions('pgsql')
+        );
+        $this->assertSame(['dbname' => '/data/db.sqlite'], $settings->getServiceOptions('sqlite'));
+    }
+
+    public function testFromEnvFallsBackToEnvSuperglobal(): void
+    {
+        $originalGetenv = getenv('DATA_MYSQL_NAME');
+        $originalEnv    = $_ENV['DATA_MYSQL_NAME'] ?? null;
+
+        try {
+            putenv('DATA_MYSQL_NAME');
+            $_ENV['DATA_MYSQL_NAME'] = 'env-db';
+
+            $settings = Settings::fromEnv(['root' => '/app']);
+
+            $this->assertSame('env-db', $settings->getServiceOptions('mysql')['dbname']);
+        } finally {
+            putenv(
+                $originalGetenv === false
+                    ? 'DATA_MYSQL_NAME'
+                    : 'DATA_MYSQL_NAME=' . $originalGetenv
+            );
+            if ($originalEnv === null) {
+                unset($_ENV['DATA_MYSQL_NAME']);
+            } else {
+                $_ENV['DATA_MYSQL_NAME'] = $originalEnv;
+            }
+        }
+    }
+
+    public function testFromEnvUsesRootOverride(): void
+    {
+        $this->assertSame('/app', Settings::fromEnv(['root' => '/app'])->rootPath());
+    }
+
+    public function testGetDatabaseOptionsRejectsUnknownDriver(): void
+    {
+        $this->expectException(UnknownDriver::class);
+        Settings::fromArray(['root' => '/app'])->getDatabaseOptions('oracle');
+    }
+
+    public function testRootPathTrimsSlashes(): void
+    {
+        $settings = Settings::fromArray(['root' => '/app/']);
+
+        $this->assertSame('/app', $settings->rootPath());
+        $this->assertSame('/app/sub', $settings->rootPath('/sub'));
+    }
 }

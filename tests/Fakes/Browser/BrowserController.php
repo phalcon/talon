@@ -102,6 +102,14 @@ class BrowserController extends Controller
         return $this->response->setContent($html);
     }
 
+    public function queryAction(): ResponseInterface
+    {
+        $uri = $this->request->getURI();
+        $got = (string) $this->request->getQuery('q');
+
+        return $this->response->setContent('uri=' . $uri . '|got=' . $got);
+    }
+
     public function searchAction(): ResponseInterface
     {
         $html = '<html><body>'

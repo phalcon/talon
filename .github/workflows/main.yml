@@ -166,6 +166,9 @@ jobs:
       - name: Tests with coverage
         run: composer test-coverage
 
+      - name: Mutation testing
+        run: composer test-mutation
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
         env:

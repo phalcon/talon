@@ -13,9 +13,16 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Traits;
 
+use Phalcon\Di\DiInterface;
+use Phalcon\Di\InjectionAwareInterface;
+use Phalcon\Http\ResponseInterface;
+use Phalcon\Mvc\Dispatcher;
 use Phalcon\Talon\Exceptions\ResponseNotDispatched;
+use Phalcon\Talon\Tests\Fakes\App\FakeAppWithMissingDispatcher;
+use Phalcon\Talon\Tests\Fakes\FunctionalFixture;
 use Phalcon\Talon\Traits\FunctionalAssertionsTrait;
 use Phalcon\Talon\Traits\FunctionalTrait;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\TestCase;
 
 final class FunctionalTraitTest extends TestCase
@@ -80,5 +87,93 @@ final class FunctionalTraitTest extends TestCase
         $this->expectException(ResponseNotDispatched::class);
 
         $this->getContent();
+    }
+
+    public function testAssertActionFailsOnMismatch(): void
+    {
+        $this->dispatch('/test/hello');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertAction('other');
+    }
+
+    public function testAssertDispatchIsForwardedFailsWhenNotForwarded(): void
+    {
+        $this->dispatch('/test/hello');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertDispatchIsForwarded();
+    }
+
+    public function testAssertResponseCodeFailsWhenStatusHeaderMissing(): void
+    {
+        $this->dispatch('/test/hello');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertResponseCode(404);
+    }
+
+    public function testAssertResponseContentContainsFailsOnMissingNeedle(): void
+    {
+        $this->dispatch('/test/hello');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertResponseContentContains('absent');
+    }
+
+    public function testProtectedHelpersAreAccessibleFromSubclass(): void
+    {
+        $child = new class () extends FunctionalFixture {
+            public function callDispatcher(): Dispatcher
+            {
+                return $this->dispatcher();
+            }
+
+            public function callResolveDi(InjectionAwareInterface $application): DiInterface
+            {
+                return $this->resolveDi($application);
+            }
+
+            public function callResponse(): ResponseInterface
+            {
+                return $this->response();
+            }
+        };
+
+        $child->dispatch('/test/hello');
+
+        $this->assertInstanceOf(Dispatcher::class, $child->callDispatcher());
+        $this->assertInstanceOf(ResponseInterface::class, $child->callResponse());
+        $this->assertInstanceOf(
+            DiInterface::class,
+            $child->callResolveDi(new FakeAppWithMissingDispatcher())
+        );
+    }
+
+    public function testPublicApiIsCallableFromOutside(): void
+    {
+        $fixture = new FunctionalFixture();
+
+        $fixture->dispatch('/test/hello');
+        $this->assertSame('Hello Operator', $fixture->getContent());
+        $fixture->assertAction('hello');
+        $fixture->assertController('test');
+        $fixture->assertResponseContentContains('Operator');
+
+        $fixture->dispatch('/test/forward');
+        $fixture->assertDispatchIsForwarded();
+
+        $fixture->dispatch('/test/header');
+        $fixture->assertHeader(['X-Talon' => 'yes']);
+
+        $fixture->dispatch('/test/redirect');
+        $fixture->assertRedirectTo('/target');
+
+        $fixture->dispatch('/test/status');
+        $fixture->assertResponseCode(404);
     }
 }

@@ -17,6 +17,7 @@ use Phalcon\Talon\Tests\Fakes\MultiplySubject;
 use Phalcon\Talon\Tests\Fakes\ReflectionSubject;
 use Phalcon\Talon\Traits\ReflectionTrait;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 final class ReflectionTraitTest extends TestCase
 {
@@ -38,6 +39,31 @@ final class ReflectionTraitTest extends TestCase
         $subject = new ReflectionSubject(10);
 
         $this->assertSame(15, $this->invokeMethod($subject, 'plusBase', [5]));
+    }
+
+    public function testPublicApiVisibility(): void
+    {
+        // Execute each helper so this test covers the mutated method bodies
+        // (infection pairs tests with mutants via line coverage).
+        $subject = new MultiplySubject();
+        $this->callProtectedMethod($subject, 'multiply', 2);
+        $this->getProtectedProperty($subject, 'value');
+        $this->setProtectedProperty($subject, 'value', 3);
+        $this->invokeMethod(new ReflectionSubject(1), 'plusBase', [1]);
+
+        foreach (
+            [
+                'callProtectedMethod',
+                'getProtectedProperty',
+                'invokeMethod',
+                'setProtectedProperty',
+            ] as $method
+        ) {
+            $this->assertTrue(
+                (new ReflectionMethod(self::class, $method))->isPublic(),
+                $method
+            );
+        }
     }
 
     public function testWorksWithClassStrings(): void

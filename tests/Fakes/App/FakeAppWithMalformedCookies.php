@@ -47,6 +47,13 @@ final class FakeAppWithMalformedCookies implements InjectionAwareInterface
         $this->di->remove('Phalcon\Http\Cookie');
         $cookies->set('nonScalar', ['not', 'scalar'], time() + 3600);
 
+        // Valid cookies AFTER the malformed ones: prove skipping continues the
+        // loop, an int value is cast for rawurlencode(), a custom path is kept,
+        // and a zero-expiration cookie stays a session cookie.
+        $cookies->set('answer', 42, time() + 3600);
+        $cookies->set('scoped', 'v', time() + 3600, '/sub');
+        $cookies->set('sess', 'live');
+
         $this->di->setShared('cookies', fn () => $cookies);
     }
 
