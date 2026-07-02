@@ -6,6 +6,7 @@
 
 ### Added
 
+- `talon` CLI runner: `vendor/bin/talon run [suites...] [-- passthrough]` fronts PHPUnit per mapped suite, `talon suites` lists the map. Suites come from a root `talon.php` (per-suite `config`/`php`/`env`/`args`, global `php`/`env` merged in) or, with zero config, from discovered `phpunit*.xml` files (`phpunit.mysql.xml` -> `mysql`; `phpunit.xml.dist` -> `unit`, the default). Options forward to PHPUnit starting at the first option talon does not recognize (everything after `--` always forwards verbatim); the reserved name `all` runs every suite sequentially with a `max()` exit code; subprocess re-exec keeps per-suite ini flags (e.g. `extension=phalcon.so`) and env vars possible. Adds `phalcon/cli-options-parser` (^2.0) as a runtime dependency. [#5](https://github.com/phalcon/talon/issues/5)
 - Infection mutation testing: `infection/infection` (^0.29) as a dev dependency, configured via `resources/infection.json5` (source `src/`, `@default` mutators, logs and temp files under `tests/_output/infection/`), with a `composer test-mutation` script and a report-only step in the CI coverage job. The suite was hardened until the mutation score plateaued at 99% MSI / 99% covered MSI under the ext-phalcon (v5) test image - the five surviving mutants are provider-specific and are killed under the phalcon/phalcon (v6) provider the CI step runs on. Every config-level mutator ignore is individually justified in `resources/infection.json5`. [#7](https://github.com/phalcon/talon/issues/7)
 
 ### Fixed
