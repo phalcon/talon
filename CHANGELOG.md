@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.6.0](https://github.com/phalcon/talon/releases/tag/v0.5.0) (2026-xx-xx)
+## [0.6.0](https://github.com/phalcon/talon/releases/tag/v0.5.0) (2026-07-02)
 
 ### Changed
 
