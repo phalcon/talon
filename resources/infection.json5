@@ -1,0 +1,95 @@
+{
+    "$schema": "../vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "src"
+        ]
+    },
+    "logs": {
+        "text": "../tests/_output/infection/infection.log",
+        "summary": "../tests/_output/infection/summary.log"
+    },
+    "tmpDir": "../tests/_output/infection/tmp",
+    "phpUnit": {
+        "configDir": "."
+    },
+    "mutators": {
+        "@default": true,
+        "CastString": {
+            "ignore": [
+                // The (string) cast result is only used as an array key; PHP
+                // normalizes numeric-string keys back to int, so it is a no-op.
+                "Phalcon\\Talon\\Settings::sectionOfArrays",
+                // BrowserKit Request::getUri() is declared ": string"; the
+                // engine guarantees a string, so the cast is a no-op.
+                "Phalcon\\Talon\\Browser\\Client::doRequest::70",
+                // Phalcon Response::getContent() is declared ": string" (it
+                // casts internally); the cast is a no-op.
+                "Phalcon\\Talon\\Browser\\Client::normalizeResponse::160"
+            ]
+        },
+        "FunctionCallRemoval": {
+            // xdebug is not loaded in the test images (pcov is);
+            // ini_set('xdebug.*') is a silent no-op there, so whether any
+            // single tuning call runs is unobservable.
+            "ignore": [
+                "Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::100",
+                "Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::101",
+                "Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::102",
+                "Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::103",
+                "Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::104"
+            ]
+        },
+        "IfNegation": {
+            // Same no-op reasoning for the xdebug tuning guard; line-scoped
+            // so the killable mbstring guard at line 93 stays mutable.
+            "ignore": ["Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::99"]
+        },
+        "IncrementInteger": {
+            // Every accumulated query starts with the "\n" separator, so
+            // substr($query, 1, ...) only removes what trim() strips anyway.
+            "ignore": ["Phalcon\\Talon\\Database\\StatementSplitter::split::64"]
+        },
+        "LogicalOrAllSubExprNegation": {
+            "ignore": [
+                // !A || !B differs from A || B only when no Phalcon provider
+                // is present at all - the suite cannot run in that state.
+                "Phalcon\\Talon\\Environment::phalconAvailable",
+                // A label cannot start with both '/' and '(', so !A || !B is
+                // an always-true guard; Symfony filterXPath() returns an
+                // empty crawler for any non-XPath label (even invalid
+                // expressions), which falls through to the same
+                // ElementNotFound - no observable difference.
+                "Phalcon\\Talon\\Traits\\BrowserTrait::resolveForm::134"
+            ]
+        },
+        "MatchArmRemoval": {
+            // The default arm is dead code: getDatabaseOptions() already threw
+            // UnknownDriver for any driver outside DRIVERS before the match.
+            "ignore": ["Phalcon\\Talon\\Settings::getDatabaseDsn::186"]
+        },
+        "MethodCallRemoval": {
+            "ignore": [
+                // parent::setUp()/parent::tearDown() resolve to PHPUnit
+                // TestCase's empty template methods - removal is equivalent.
+                // Line-scoped so Di::reset()/resetConnections() stay mutable.
+                "Phalcon\\Talon\\PHPUnit\\AbstractUnitTestCase::setUp::40",
+                "Phalcon\\Talon\\PHPUnit\\AbstractDatabaseTestCase::tearDown::26",
+                // PDO on PHP >= 8.0 already defaults to ERRMODE_EXCEPTION;
+                // the explicit setAttribute() is a belt-and-braces no-op.
+                "Phalcon\\Talon\\Database\\Connection::getPdo::54"
+            ]
+        },
+        "Throw_": {
+            // Same dead default arm; line-scoped so the live throw in
+            // getDatabaseOptions() stays mutable.
+            "ignore": ["Phalcon\\Talon\\Settings::getDatabaseDsn::201"]
+        },
+        "UnwrapTrim": {
+            // Lines are trimmed before being accumulated, so the final
+            // flush guard's trim() cannot change the emptiness check.
+            // Line-scoped so the killable trim() at line 41 stays mutable.
+            "ignore": ["Phalcon\\Talon\\Database\\StatementSplitter::split::69"]
+        }
+    }
+}
