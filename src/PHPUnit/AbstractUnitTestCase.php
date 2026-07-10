@@ -39,7 +39,9 @@ abstract class AbstractUnitTestCase extends TestCase
     {
         parent::setUp();
 
-        Di::reset();
+        if ($this->phalconAvailable()) {
+            Di::reset();
+        }
     }
 
     public function checkExtensionIsLoaded(string $extension): void

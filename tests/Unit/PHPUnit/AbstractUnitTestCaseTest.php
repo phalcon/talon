@@ -106,6 +106,32 @@ final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
         $this->assertNull(Di::getDefault());
     }
 
+    public function testSetUpSkipsDiResetWhenPhalconIsNotAvailable(): void
+    {
+        $default = new FactoryDefault();
+        Di::setDefault($default);
+
+        // A test case that reports Phalcon as unavailable must not touch the DI,
+        // so packages without Phalcon/DI can still use the Talon abstracts.
+        $withoutPhalcon = new class ('runSetUp') extends AbstractUnitTestCase {
+            public function runSetUp(): void
+            {
+                $this->setUp();
+            }
+
+            protected function phalconAvailable(): bool
+            {
+                return false;
+            }
+        };
+
+        $withoutPhalcon->runSetUp();
+
+        $this->assertSame($default, Di::getDefault());
+
+        Di::reset();
+    }
+
     public function testHelperMethodVisibility(): void
     {
         // Execute each helper so this test covers the mutated method bodies

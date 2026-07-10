@@ -23,7 +23,6 @@ use Phalcon\Session\Manager;
 // session.* warns once a session has started.
 if (PHP_SESSION_NONE === session_status()) {
     ini_set('session.use_cookies', '0');
-    ini_set('session.use_only_cookies', '0');
     ini_set('session.cache_limiter', '');
 }
 
