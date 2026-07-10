@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/phalcon/talon/releases/tag/v0.7.0) (2026-07-10)
+
+### Changed
+
+### Added
+
+### Fixed
+
+- `AbstractUnitTestCase::setUp()` now guards its `Di::reset()` call behind `phalconAvailable()`, so packages that use the Talon abstract test cases without Phalcon (or without the DI component) no longer hit a fatal `Class "Phalcon\Di\Di" not found` at setup time - because `AbstractUnitTestCase` is the root of the hierarchy, every abstract (`AbstractServicesTestCase`/`AbstractDatabaseTestCase`/`AbstractBrowserTestCase`/`AbstractFunctionalTestCase`) inherits the fix and can be extended without a DI. When Phalcon is available the reset still runs unchanged. [#14](https://github.com/phalcon/talon/issues/14)
+
+### Removed
+
 ## [0.6.0](https://github.com/phalcon/talon/releases/tag/v0.6.0) (2026-07-02)
 
 ### Changed
