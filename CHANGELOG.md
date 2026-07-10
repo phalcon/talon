@@ -9,6 +9,7 @@
 ### Fixed
 
 - `AbstractUnitTestCase::setUp()` now guards its `Di::reset()` call behind `phalconAvailable()`, so packages that use the Talon abstract test cases without Phalcon (or without the DI component) no longer hit a fatal `Class "Phalcon\Di\Di" not found` at setup time - because `AbstractUnitTestCase` is the root of the hierarchy, every abstract (`AbstractServicesTestCase`/`AbstractDatabaseTestCase`/`AbstractBrowserTestCase`/`AbstractFunctionalTestCase`) inherits the fix and can be extended without a DI. When Phalcon is available the reset still runs unchanged. [#14](https://github.com/phalcon/talon/issues/14)
+- `AbstractBrowserTestCase` now clears `$_SESSION` in `tearDown()` as well as `setUp()`, so a test that logs a user in no longer leaks that session into a following test that does not reset it itself. The browser fixture session persists across the in-process app rebuilds and `Di::reset()` does not clear it, which surfaced as a random-order failure of `FixtureSmokeTest::testSecuredShowsGuestWithoutSession` (it read a `sarah` session left behind by `BrowserTraitTest`). [#16](https://github.com/phalcon/talon/pull/16)
 
 ### Removed
 

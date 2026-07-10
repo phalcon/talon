@@ -29,4 +29,13 @@ abstract class AbstractBrowserTestCase extends AbstractUnitTestCase
         // session across requests within a test; clear it between tests).
         $_SESSION = [];
     }
+
+    protected function tearDown(): void
+    {
+        // Clear on the way out too, so a logged-in session is not leaked into a
+        // following test that does not reset it itself.
+        $_SESSION = [];
+
+        parent::tearDown();
+    }
 }
