@@ -8,7 +8,9 @@
         "php": "^8.1",
         "phalcon/cli-options-parser": "^2.0",
         "symfony/browser-kit": "^6.4 || ^7.0",
-        "symfony/dom-crawler": "^6.4 || ^7.0"
+        "symfony/dom-crawler": "^6.4 || ^7.0",
+        "symfony/http-client": "^6.4 || ^7.0",
+        "symfony/mime": "^6.4 || ^7.0"
     },
     "require-dev": {
         "ext-pdo": "*",
