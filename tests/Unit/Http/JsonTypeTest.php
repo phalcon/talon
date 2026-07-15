@@ -42,6 +42,39 @@ final class JsonTypeTest extends AbstractUnitTestCase
         $this->assertNull(JsonType::match(['a' => 1.5], ['a' => 'float']));
     }
 
+    /**
+     * A decoded JSON array is int-keyed, so the path built for a nested map at
+     * an integer key must still be a string.
+     */
+    public function testIntegerKeyedNestedMapReportsAStringPath(): void
+    {
+        $this->assertSame(
+            "Key '0.a' expected 'string', got 'int'",
+            JsonType::match([['a' => 1]], [0 => ['a' => 'string']])
+        );
+    }
+
+    /**
+     * A nested map that matches must not end the walk - the keys after it still
+     * have to be checked.
+     */
+    public function testKeyAfterAMatchingNestedMapIsStillChecked(): void
+    {
+        $this->assertSame(
+            "Key 'meta.hash' expected 'string', got 'int'",
+            JsonType::match(
+                [
+                    'jsonapi' => ['version' => '1.0'],
+                    'meta'    => ['hash' => 1],
+                ],
+                [
+                    'jsonapi' => ['version' => 'string'],
+                    'meta'    => ['hash' => 'string'],
+                ]
+            )
+        );
+    }
+
     public function testMatchesTheRestApiEnvelope(): void
     {
         $actual = [

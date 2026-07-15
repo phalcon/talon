@@ -29,6 +29,8 @@ final class RestTraitTest extends AbstractUnitTestCase
 {
     use RestTrait;
 
+    private string $baseUrl = 'http://api.test:8080';
+
     /**
      * @var array<int, array{method: string, url: string, headers: array<int, string>, body: string}>
      */
@@ -36,6 +38,19 @@ final class RestTraitTest extends AbstractUnitTestCase
 
     /** @var array<int, MockResponse> */
     private array $responses = [];
+
+    /**
+     * @return array<int, array{0: string}>
+     */
+    public static function providerBodylessVerbs(): array
+    {
+        return [
+            ['DELETE'],
+            ['GET'],
+            ['HEAD'],
+            ['OPTIONS'],
+        ];
+    }
 
     public function testAbsoluteHttpsUrlIsNotPrefixed(): void
     {
@@ -70,6 +85,60 @@ final class RestTraitTest extends AbstractUnitTestCase
         );
     }
 
+    /**
+     * A trailing slash on the configured base URL must not produce '//' once
+     * the path is joined on.
+     */
+    public function testBaseUrlTrailingSlashIsNotDoubled(): void
+    {
+        $this->baseUrl = 'http://api.test:8080/';
+        $this->sendGet('/companies');
+
+        $this->assertSame('http://api.test:8080/companies', $this->requests[0]['url']);
+    }
+
+    /**
+     * GET/HEAD/OPTIONS/DELETE put their params in the query string; every other
+     * verb puts them in the body. Asserting the query proves each verb is in
+     * the bodyless set - a body-carrying verb would leave the URL bare.
+     *
+     * @dataProvider providerBodylessVerbs
+     */
+    public function testBodylessVerbsSendParamsAsQuery(string $method): void
+    {
+        $this->send($method, '/companies', ['page' => 2]);
+
+        $this->assertSame($method, $this->requests[0]['method']);
+        $this->assertSame('http://api.test:8080/companies?page=2', $this->requests[0]['url']);
+        $this->assertSame('', $this->requests[0]['body']);
+    }
+
+    public function testContentTypeMatchIsCaseInsensitive(): void
+    {
+        $this->haveHttpHeader('Content-Type', 'APPLICATION/JSON');
+        $this->sendPost('/login', ['username' => 'sarah']);
+
+        $this->assertSame(
+            ['username' => 'sarah'],
+            json_decode($this->requests[0]['body'], true)
+        );
+    }
+
+    public function testDoesNotFollowRedirectsByDefault(): void
+    {
+        $this->responses = [
+            new MockResponse('', [
+                'http_code'        => 302,
+                'response_headers' => ['Location' => 'http://api.test:8080/target'],
+            ]),
+        ];
+
+        $this->sendGet('/start');
+
+        $this->assertCount(1, $this->requests);
+        $this->assertSame(302, $this->grabResponseCode());
+    }
+
     public function testGrabHttpHeader(): void
     {
         $this->sendGet('/companies');
@@ -101,6 +170,21 @@ final class RestTraitTest extends AbstractUnitTestCase
 
         $this->assertContains('x-token: abc', $this->requests[0]['headers']);
         $this->assertContains('x-token: abc', $this->requests[1]['headers']);
+    }
+
+    /**
+     * A header set once the browser already exists must still reach the wire -
+     * restBrowser() only syncs on construction, so haveHttpHeader() has to push
+     * it itself.
+     */
+    public function testHeaderSetAfterTheFirstRequestApplies(): void
+    {
+        $this->sendGet('/one');
+        $this->haveHttpHeader('X-Late', 'v');
+        $this->sendGet('/two');
+
+        $this->assertNotContains('x-late: v', $this->requests[0]['headers']);
+        $this->assertContains('x-late: v', $this->requests[1]['headers']);
     }
 
     public function testQueryAppendedWithAmpersandWhenUrlHasQuery(): void
@@ -152,6 +236,13 @@ final class RestTraitTest extends AbstractUnitTestCase
         );
     }
 
+    public function testSendUppercasesTheMethod(): void
+    {
+        $this->send('get', '/companies');
+
+        $this->assertSame('GET', $this->requests[0]['method']);
+    }
+
     public function testStartFollowingRedirectsFollowsLocation(): void
     {
         $this->responses = [
@@ -168,6 +259,27 @@ final class RestTraitTest extends AbstractUnitTestCase
         $this->assertCount(2, $this->requests);
         $this->assertSame('http://api.test:8080/target', $this->requests[1]['url']);
         $this->assertSame('done', $this->grabResponse());
+    }
+
+    /**
+     * stopFollowingRedirects() must actually turn following off, not merely
+     * agree with the constructor default.
+     */
+    public function testStopFollowingRedirectsAfterStartingDoesNotFollow(): void
+    {
+        $this->responses = [
+            new MockResponse('', [
+                'http_code'        => 302,
+                'response_headers' => ['Location' => 'http://api.test:8080/target'],
+            ]),
+        ];
+
+        $this->startFollowingRedirects();
+        $this->stopFollowingRedirects();
+        $this->sendGet('/start');
+
+        $this->assertCount(1, $this->requests);
+        $this->assertSame(302, $this->grabResponseCode());
     }
 
     public function testStopFollowingRedirectsDoesNotFollow(): void
@@ -214,7 +326,7 @@ final class RestTraitTest extends AbstractUnitTestCase
 
     protected function restBaseUrl(): string
     {
-        return 'http://api.test:8080';
+        return $this->baseUrl;
     }
 
     protected function restHttpClient(): HttpClientInterface

@@ -27,6 +27,43 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
     private array $headers = ['Content-Type' => 'application/json'];
 
     private int $status = 200;
+    /**
+     * Each range assertion is pinned at both bounds, one code inside and one
+     * outside, so shifting either literal by one is observable.
+     *
+     * @return array<string, array{0: int, 1: string, 2: bool}>
+     */
+    public static function providerRangeBoundaries(): array
+    {
+        return [
+            '199 not successful'   => [199, 'assertResponseCodeIsSuccessful', false],
+            '200 successful'       => [200, 'assertResponseCodeIsSuccessful', true],
+            '299 successful'       => [299, 'assertResponseCodeIsSuccessful', true],
+            '300 not successful'   => [300, 'assertResponseCodeIsSuccessful', false],
+            '299 not redirection'  => [299, 'assertResponseCodeIsRedirection', false],
+            '300 redirection'      => [300, 'assertResponseCodeIsRedirection', true],
+            '399 redirection'      => [399, 'assertResponseCodeIsRedirection', true],
+            '400 not redirection'  => [400, 'assertResponseCodeIsRedirection', false],
+            '399 not client error' => [399, 'assertResponseCodeIsClientError', false],
+            '400 client error'     => [400, 'assertResponseCodeIsClientError', true],
+            '499 client error'     => [499, 'assertResponseCodeIsClientError', true],
+            '500 not client error' => [500, 'assertResponseCodeIsClientError', false],
+            '499 not server error' => [499, 'assertResponseCodeIsServerError', false],
+            '500 server error'     => [500, 'assertResponseCodeIsServerError', true],
+            '599 server error'     => [599, 'assertResponseCodeIsServerError', true],
+            '600 not server error' => [600, 'assertResponseCodeIsServerError', false],
+        ];
+    }
+
+    public function testAssertHttpHeaderFailsWhenTheHeaderIsAbsent(): void
+    {
+        $this->respondWith('{}');
+
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessageMatches("/header 'X-Absent' is present/");
+
+        $this->assertHttpHeader('X-Absent');
+    }
 
     public function testAssertResponseCodeIs(): void
     {
@@ -45,12 +82,53 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
         $this->assertResponseCodeIs(200);
     }
 
+    public function testAssertResponseCodeIsNotFailsWhenTheCodeMatches(): void
+    {
+        $this->respondWith('{}', 200);
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertResponseCodeIsNot(200);
+    }
+
+    public function testAssertResponseContainsFailsWhenTheTextIsAbsent(): void
+    {
+        $this->respondWith('{"a":1}');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertResponseContains('"b"');
+    }
+
+    /**
+     * The failure message carries the response body - without it a failing
+     * fragment assertion says nothing about what actually came back.
+     */
+    public function testAssertResponseContainsJsonFailsAndNamesTheResponse(): void
+    {
+        $this->respondWith('{"data":[{"name":"Acme"}]}');
+
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessageMatches('/Response: \{"data":\[\{"name":"Acme"\}\]\}/');
+
+        $this->assertResponseContainsJson(['data' => [['name' => 'Nope']]]);
+    }
+
     public function testAssertResponseContainsJsonMatchesFragment(): void
     {
         $this->respondWith('{"jsonapi":{"version":"1.0"},"data":[{"id":1,"name":"Acme"}]}');
 
         $this->assertResponseContainsJson(['data' => [['name' => 'Acme']]]);
         $this->assertResponseNotContainsJson(['data' => [['name' => 'Other']]]);
+    }
+
+    public function testAssertResponseEqualsFailsOnADifferentBody(): void
+    {
+        $this->respondWith('{"a":1}');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertResponseEquals('{"a":2}');
     }
 
     public function testAssertResponseIsJson(): void
@@ -65,6 +143,16 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
         $this->respondWith('not json');
 
         $this->expectException(AssertionFailedError::class);
+
+        $this->assertResponseIsJson();
+    }
+
+    public function testAssertResponseIsJsonFailureNamesTheResponse(): void
+    {
+        $this->respondWith('not json at all');
+
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessageMatches('/Response: not json at all/');
 
         $this->assertResponseIsJson();
     }
@@ -94,9 +182,36 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
         $this->assertResponseMatchesJsonType(['meta' => ['hash' => 'string']]);
     }
 
+    public function testAssertResponseNotContainsFailsWhenTheTextIsPresent(): void
+    {
+        $this->respondWith('{"a":1}');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertResponseNotContains('"a"');
+    }
+
+    public function testAssertResponseNotContainsJsonFailsWhenTheFragmentMatches(): void
+    {
+        $this->respondWith('{"data":[{"name":"Acme"}]}');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertResponseNotContainsJson(['data' => [['name' => 'Acme']]]);
+    }
+
     public function testAssertResponseNotMatchesJsonType(): void
     {
         $this->respondWith('{"meta":{"hash":1}}');
+
+        $this->assertResponseNotMatchesJsonType(['meta' => ['hash' => 'string']]);
+    }
+
+    public function testAssertResponseNotMatchesJsonTypeFailsWhenTheTypesMatch(): void
+    {
+        $this->respondWith('{"meta":{"hash":"abc"}}');
+
+        $this->expectException(AssertionFailedError::class);
 
         $this->assertResponseNotMatchesJsonType(['meta' => ['hash' => 'string']]);
     }
@@ -120,11 +235,60 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
         $this->assertNoHttpHeader('Content-Type', 'text/html');
     }
 
+    public function testHeaderAssertionsFailOnAWrongValue(): void
+    {
+        $this->respondWith('{}');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertHttpHeader('Content-Type', 'text/html');
+    }
+
     public function testJsonAssertionsTreatANonObjectResponseAsEmpty(): void
     {
         $this->respondWith('"just a string"');
 
         $this->assertResponseNotContainsJson(['a' => 1]);
+    }
+
+    public function testNoHttpHeaderFailsWhenTheHeaderIsPresent(): void
+    {
+        $this->respondWith('{}');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertNoHttpHeader('Content-Type');
+    }
+
+    public function testNoHttpHeaderFailsWhenTheValueMatches(): void
+    {
+        $this->respondWith('{}');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertNoHttpHeader('Content-Type', 'application/json');
+    }
+
+    /**
+     * The range assertions are two comparisons against literal bounds, so each
+     * bound must be pinned from both sides - a test that only uses a mid-range
+     * code cannot tell 400..499 from 401..498.
+     *
+     * @dataProvider providerRangeBoundaries
+     */
+    public function testRangeAssertionBoundaries(int $code, string $method, bool $shouldPass): void
+    {
+        $this->respondWith('{}', $code);
+
+        if (!$shouldPass) {
+            $this->expectException(AssertionFailedError::class);
+        }
+
+        $this->$method();
+
+        // On the passing path $method() has already asserted the bounds; assert
+        // the code round-tripped so the test carries an assertion of its own.
+        $this->assertSame($code, $this->grabResponseCode());
     }
 
     public function testRangeAssertions(): void
