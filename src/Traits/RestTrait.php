@@ -22,6 +22,7 @@ use Symfony\Component\BrowserKit\Response;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 use function base64_encode;
+use function basename;
 use function http_build_query;
 use function in_array;
 use function is_string;
@@ -39,6 +40,8 @@ use function strtoupper;
  */
 trait RestTrait
 {
+    private ?string $restBaseUrlOverride = null;
+
     private ?AbstractBrowser $restClient = null;
 
     /** @var array<string, string> */
@@ -54,6 +57,10 @@ trait RestTrait
         $this->haveHttpHeader('Authorization', 'Basic ' . base64_encode($username . ':' . $password));
     }
 
+    /**
+     * Returns the first value of a response header. A header sent more than
+     * once (Set-Cookie being the usual case) reports only its first value.
+     */
     public function grabHttpHeader(string $name): ?string
     {
         // getHeader() is declared string|array|null, but the array arm is only
@@ -74,43 +81,62 @@ trait RestTrait
         return $this->restResponse()->getStatusCode();
     }
 
+    /**
+     * Sets a request header for this and every later request, until it is
+     * unset.
+     */
     public function haveHttpHeader(string $name, string $value): void
     {
         $this->restRequestHeaders[$this->headerKey($name)] = $value;
-        $this->syncRequestHeaders();
     }
 
     /**
      * @param array<array-key, mixed>|string $params
+     * @param array<string, mixed>           $files
      */
-    public function send(string $method, string $url, array|string $params = []): void
+    public function send(string $method, string $url, array|string $params = [], array $files = []): void
     {
         $method = strtoupper($method);
         $uri    = $this->restUrl($url);
 
         if (is_string($params)) {
-            $this->restBrowser()->request($method, $uri, [], [], [], $params);
+            // HttpBrowser wraps an unlabelled string body in a TextPart, which
+            // goes out as text/plain. On a REST surface a raw body is JSON far
+            // more often than not, so name it - per request, and only when the
+            // caller has not named it already (the union keeps the left side).
+            $server = $this->restRequestHeaders + [$this->headerKey('Content-Type') => 'application/json'];
+
+            $this->restBrowser()->request($method, $uri, [], $this->normalizeFiles($files), $server, $params);
 
             return;
         }
 
-        if (in_array($method, ['DELETE', 'GET', 'HEAD', 'OPTIONS'], true)) {
+        // Files force a body, so a bodyless verb carrying them falls through to
+        // the multipart path rather than silently dropping them.
+        if ([] === $files && in_array($method, ['DELETE', 'GET', 'HEAD', 'OPTIONS'], true)) {
             if ([] !== $params) {
                 $uri .= (str_contains($uri, '?') ? '&' : '?') . http_build_query($params);
             }
 
-            $this->restBrowser()->request($method, $uri);
+            $this->restBrowser()->request($method, $uri, [], [], $this->restRequestHeaders);
 
             return;
         }
 
-        if ($this->sendsJson()) {
-            $this->restBrowser()->request($method, $uri, [], [], [], (string) json_encode($params));
+        if ([] === $files && $this->sendsJson()) {
+            $this->restBrowser()->request(
+                $method,
+                $uri,
+                [],
+                [],
+                $this->restRequestHeaders,
+                (string) json_encode($params)
+            );
 
             return;
         }
 
-        $this->restBrowser()->request($method, $uri, $params);
+        $this->restBrowser()->request($method, $uri, $params, $this->normalizeFiles($files), $this->restRequestHeaders);
     }
 
     /**
@@ -147,26 +173,29 @@ trait RestTrait
 
     /**
      * @param array<array-key, mixed>|string $params
+     * @param array<string, mixed>           $files
      */
-    public function sendPatch(string $url, array|string $params = []): void
+    public function sendPatch(string $url, array|string $params = [], array $files = []): void
     {
-        $this->send('PATCH', $url, $params);
+        $this->send('PATCH', $url, $params, $files);
     }
 
     /**
      * @param array<array-key, mixed>|string $params
+     * @param array<string, mixed>           $files
      */
-    public function sendPost(string $url, array|string $params = []): void
+    public function sendPost(string $url, array|string $params = [], array $files = []): void
     {
-        $this->send('POST', $url, $params);
+        $this->send('POST', $url, $params, $files);
     }
 
     /**
      * @param array<array-key, mixed>|string $params
+     * @param array<string, mixed>           $files
      */
-    public function sendPut(string $url, array|string $params = []): void
+    public function sendPut(string $url, array|string $params = [], array $files = []): void
     {
-        $this->send('PUT', $url, $params);
+        $this->send('PUT', $url, $params, $files);
     }
 
     public function startFollowingRedirects(): void
@@ -182,11 +211,24 @@ trait RestTrait
     public function unsetHttpHeader(string $name): void
     {
         unset($this->restRequestHeaders[$this->headerKey($name)]);
-        $this->syncRequestHeaders();
+    }
+
+    /**
+     * Points this test at a base URL, ahead of the one Settings resolves.
+     * Without it the URL comes from TALON_REST_URL via Talon's shared Settings,
+     * which is process-global and cannot vary per test.
+     */
+    public function useRestBaseUrl(string $url): void
+    {
+        $this->restBaseUrlOverride = $url;
     }
 
     protected function restBaseUrl(): string
     {
+        if (null !== $this->restBaseUrlOverride) {
+            return $this->restBaseUrlOverride;
+        }
+
         $url = Talon::settings()->get('rest_url');
 
         return is_string($url) && '' !== $url ? $url : 'http://127.0.0.1:8080';
@@ -202,7 +244,6 @@ trait RestTrait
         $client->followRedirects(false);
 
         $this->restClient = $client;
-        $this->syncRequestHeaders();
 
         return $client;
     }
@@ -217,9 +258,37 @@ trait RestTrait
         return null;
     }
 
+    /**
+     * Header names map onto PHP's HTTP_* server convention, so '-' and '_' are
+     * indistinguishable: 'Content-Type' and 'Content_Type' address the same
+     * header and the later call wins.
+     */
     private function headerKey(string $name): string
     {
         return 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+    }
+
+    /**
+     * Accepts either a plain path or the $_FILES shape BrowserKit wants.
+     * BrowserKit's own handling of a plain path is to stop reading the list and
+     * send nothing at all, so a caller who passes the obvious thing gets a
+     * silently file-less request.
+     *
+     * @param array<string, mixed> $files
+     *
+     * @return array<string, mixed>
+     */
+    private function normalizeFiles(array $files): array
+    {
+        $normalized = [];
+
+        foreach ($files as $field => $file) {
+            $normalized[$field] = is_string($file)
+                ? ['tmp_name' => $file, 'name' => basename($file)]
+                : $file;
+        }
+
+        return $normalized;
     }
 
     private function restResponse(): Response
@@ -246,17 +315,5 @@ trait RestTrait
             strtolower($this->restRequestHeaders['HTTP_CONTENT_TYPE'] ?? ''),
             'json'
         );
-    }
-
-    private function syncRequestHeaders(): void
-    {
-        if (null === $this->restClient) {
-            return;
-        }
-
-        // setServerParameters() replaces the whole set (defaults plus what we
-        // pass), which is the only way to drop a header - BrowserKit has no
-        // removeServerParameter().
-        $this->restClient->setServerParameters($this->restRequestHeaders);
     }
 }

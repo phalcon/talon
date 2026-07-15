@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Traits;
 
+use Closure;
 use Phalcon\Talon\Exceptions\ResponseNotDispatched;
 use Phalcon\Talon\PHPUnit\AbstractUnitTestCase;
 use Phalcon\Talon\Traits\RestTrait;
@@ -24,12 +25,11 @@ use function array_shift;
 use function base64_encode;
 use function is_string;
 use function json_decode;
+use function stripos;
 
 final class RestTraitTest extends AbstractUnitTestCase
 {
     use RestTrait;
-
-    private string $baseUrl = 'http://api.test:8080';
 
     /**
      * @var array<int, array{method: string, url: string, headers: array<int, string>, body: string}>
@@ -38,6 +38,13 @@ final class RestTraitTest extends AbstractUnitTestCase
 
     /** @var array<int, MockResponse> */
     private array $responses = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->useRestBaseUrl('http://api.test:8080');
+    }
 
     /**
      * @return array<int, array{0: string}>
@@ -91,7 +98,7 @@ final class RestTraitTest extends AbstractUnitTestCase
      */
     public function testBaseUrlTrailingSlashIsNotDoubled(): void
     {
-        $this->baseUrl = 'http://api.test:8080/';
+        $this->useRestBaseUrl('http://api.test:8080/');
         $this->sendGet('/companies');
 
         $this->assertSame('http://api.test:8080/companies', $this->requests[0]['url']);
@@ -111,6 +118,22 @@ final class RestTraitTest extends AbstractUnitTestCase
         $this->assertSame($method, $this->requests[0]['method']);
         $this->assertSame('http://api.test:8080/companies?page=2', $this->requests[0]['url']);
         $this->assertSame('', $this->requests[0]['body']);
+    }
+
+    /**
+     * A caller-set server parameter must survive header changes - rebuilding the
+     * whole server bag used to wipe it.
+     */
+    public function testCallerServerParametersSurviveHeaderChanges(): void
+    {
+        $this->restBrowser()->setServerParameter('HTTP_X_CUSTOM', 'kept');
+        $this->haveHttpHeader('X-Token', 'abc');
+        $this->sendGet('/one');
+        $this->unsetHttpHeader('X-Token');
+        $this->sendGet('/two');
+
+        $this->assertContains('x-custom: kept', $this->requests[0]['headers']);
+        $this->assertContains('x-custom: kept', $this->requests[1]['headers']);
     }
 
     public function testContentTypeMatchIsCaseInsensitive(): void
@@ -194,6 +217,15 @@ final class RestTraitTest extends AbstractUnitTestCase
         $this->assertSame('http://api.test:8080/companies?filter=x&page=2', $this->requests[0]['url']);
     }
 
+    public function testRawStringBodyKeepsACallerSuppliedContentType(): void
+    {
+        $this->haveHttpHeader('Content-Type', 'application/xml');
+        $this->sendPost('/login', '<r/>');
+
+        $this->assertContains('content-type: application/xml', $this->requests[0]['headers']);
+        $this->assertNotContains('content-type: application/json', $this->requests[0]['headers']);
+    }
+
     public function testSendGetAppendsQueryParameters(): void
     {
         $this->sendGet('/companies', ['page' => 2]);
@@ -209,11 +241,16 @@ final class RestTraitTest extends AbstractUnitTestCase
         $this->assertSame('http://api.test:8080/companies', $this->requests[0]['url']);
     }
 
-    public function testSendPostAcceptsRawStringBody(): void
+    /**
+     * HttpBrowser would otherwise wrap an unlabelled string body in a TextPart
+     * and send it as text/plain, which a JSON API rejects.
+     */
+    public function testSendPostAcceptsRawStringBodyAndNamesItJson(): void
     {
         $this->sendPost('/login', '{"raw":true}');
 
         $this->assertSame('{"raw":true}', $this->requests[0]['body']);
+        $this->assertContains('content-type: application/json', $this->requests[0]['headers']);
     }
 
     public function testSendPostSendsFormParametersByDefault(): void
@@ -234,6 +271,29 @@ final class RestTraitTest extends AbstractUnitTestCase
             ['username' => 'sarah'],
             json_decode($this->requests[0]['body'], true)
         );
+    }
+
+    /**
+     * A plain path is what a caller reaches for first, and BrowserKit's own
+     * response to one is to send no files at all, silently - so both shapes
+     * have to work.
+     */
+    public function testSendPostUploadsAFileGivenAPlainPath(): void
+    {
+        $this->sendPost('/upload', ['name' => 'Acme'], ['doc' => __FILE__]);
+
+        $this->assertSame('POST', $this->requests[0]['method']);
+        $this->assertStringContainsString('multipart/form-data', $this->contentTypeOf(0));
+        $this->assertStringContainsString('RestTraitTest.php', $this->requests[0]['body']);
+        $this->assertStringContainsString('Acme', $this->requests[0]['body']);
+    }
+
+    public function testSendPostUploadsAFileGivenTheFilesShape(): void
+    {
+        $this->sendPost('/upload', [], ['doc' => ['tmp_name' => __FILE__, 'name' => 'custom.php']]);
+
+        $this->assertStringContainsString('multipart/form-data', $this->contentTypeOf(0));
+        $this->assertStringContainsString('custom.php', $this->requests[0]['body']);
     }
 
     public function testSendUppercasesTheMethod(): void
@@ -309,6 +369,14 @@ final class RestTraitTest extends AbstractUnitTestCase
         $this->assertNotContains('x-token: abc', $this->requests[1]['headers']);
     }
 
+    public function testUseRestBaseUrlOverridesSettings(): void
+    {
+        $this->useRestBaseUrl('http://other.test:9000');
+        $this->sendGet('/companies');
+
+        $this->assertSame('http://other.test:9000/companies', $this->requests[0]['url']);
+    }
+
     public function testVerbsDispatchTheRightMethod(): void
     {
         $this->sendPut('/a');
@@ -324,11 +392,6 @@ final class RestTraitTest extends AbstractUnitTestCase
         $this->assertSame('OPTIONS', $this->requests[4]['method']);
     }
 
-    protected function restBaseUrl(): string
-    {
-        return $this->baseUrl;
-    }
-
     protected function restHttpClient(): HttpClientInterface
     {
         return new MockHttpClient(
@@ -338,13 +401,12 @@ final class RestTraitTest extends AbstractUnitTestCase
             function (string $method, string $url, array $options): MockResponse {
                 /** @var array<int, string> $headers */
                 $headers = $options['headers'] ?? [];
-                $body    = $options['body'] ?? '';
 
                 $this->requests[] = [
                     'method'  => $method,
                     'url'     => $url,
                     'headers' => $headers,
-                    'body'    => is_string($body) ? $body : '',
+                    'body'    => $this->readBody($options['body'] ?? ''),
                 ];
 
                 return array_shift($this->responses) ?? new MockResponse(
@@ -356,5 +418,43 @@ final class RestTraitTest extends AbstractUnitTestCase
                 );
             }
         );
+    }
+
+    private function contentTypeOf(int $index): string
+    {
+        foreach ($this->requests[$index]['headers'] as $header) {
+            if (stripos($header, 'content-type:') === 0) {
+                return $header;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * A multipart body arrives as the Closure Symfony normalizes an iterable
+     * into, not a string; drain it so tests can assert on what was sent.
+     */
+    private function readBody(mixed $body): string
+    {
+        if (is_string($body)) {
+            return $body;
+        }
+
+        if (!$body instanceof Closure) {
+            return '';
+        }
+
+        $content = '';
+        while (true) {
+            $chunk = $body(16372);
+            if (!is_string($chunk) || '' === $chunk) {
+                break;
+            }
+
+            $content .= $chunk;
+        }
+
+        return $content;
     }
 }
