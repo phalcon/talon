@@ -18,8 +18,8 @@ use Phalcon\Talon\Traits\BrowserTrait;
 
 abstract class AbstractBrowserTestCase extends AbstractUnitTestCase
 {
-    use BrowserTrait;
     use BrowserAssertionsTrait;
+    use BrowserTrait;
 
     protected function setUp(): void
     {

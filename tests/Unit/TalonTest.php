@@ -26,20 +26,6 @@ final class TalonTest extends TestCase
         parent::tearDown();
     }
 
-    public function testSettingsLazilyFallsBackToEnv(): void
-    {
-        Talon::reset();
-        $this->assertInstanceOf(SettingsContract::class, Talon::settings());
-    }
-
-    public function testUseSettingsRegistersTheSlot(): void
-    {
-        $settings = Settings::fromArray(['root' => '/app']);
-        Talon::useSettings($settings);
-
-        $this->assertSame($settings, Talon::settings());
-    }
-
     public function testBootReturnsAndRegistersSettings(): void
     {
         $settings = Settings::fromArray(['root' => dirname(__DIR__, 2)]);
@@ -55,5 +41,19 @@ final class TalonTest extends TestCase
         Talon::reset();
 
         $this->assertNotSame($settings, Talon::settings());
+    }
+
+    public function testSettingsLazilyFallsBackToEnv(): void
+    {
+        Talon::reset();
+        $this->assertInstanceOf(SettingsContract::class, Talon::settings());
+    }
+
+    public function testUseSettingsRegistersTheSlot(): void
+    {
+        $settings = Settings::fromArray(['root' => '/app']);
+        Talon::useSettings($settings);
+
+        $this->assertSame($settings, Talon::settings());
     }
 }

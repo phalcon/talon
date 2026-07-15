@@ -19,11 +19,6 @@ use Phalcon\Talon\PHPUnit\AbstractBrowserTestCase;
 
 final class AbstractBrowserTestCaseTest extends AbstractBrowserTestCase
 {
-    protected function appFactory(): callable
-    {
-        return static fn () => require __DIR__ . '/../../Fakes/Browser/app.php';
-    }
-
     public function testSetUpResetsTheDefaultDiAndClearsSession(): void
     {
         Di::setDefault(new FactoryDefault());
@@ -33,5 +28,9 @@ final class AbstractBrowserTestCaseTest extends AbstractBrowserTestCase
 
         $this->assertNull(Di::getDefault());
         $this->assertSame([], $_SESSION);
+    }
+    protected function appFactory(): callable
+    {
+        return static fn () => require __DIR__ . '/../../Fakes/Browser/app.php';
     }
 }

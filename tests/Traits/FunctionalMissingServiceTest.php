@@ -21,13 +21,8 @@ use PHPUnit\Framework\TestCase;
 
 final class FunctionalMissingServiceTest extends TestCase
 {
-    use FunctionalTrait;
     use FunctionalAssertionsTrait;
-
-    protected function appFactory(): callable
-    {
-        return static fn (): object => new FakeAppWithMissingDispatcher();
-    }
+    use FunctionalTrait;
 
     public function testMissingDispatcherThrows(): void
     {
@@ -36,5 +31,10 @@ final class FunctionalMissingServiceTest extends TestCase
         $this->expectException(MissingService::class);
 
         $this->assertController('test');
+    }
+
+    protected function appFactory(): callable
+    {
+        return static fn (): object => new FakeAppWithMissingDispatcher();
     }
 }

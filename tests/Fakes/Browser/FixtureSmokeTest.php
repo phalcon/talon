@@ -20,11 +20,6 @@ final class FixtureSmokeTest extends TestCase
 {
     use FunctionalTrait;
 
-    protected function appFactory(): callable
-    {
-        return static fn () => require __DIR__ . '/app.php';
-    }
-
     public function testFormRendersWithCsrfField(): void
     {
         $this->dispatch('/browser/form');
@@ -39,5 +34,10 @@ final class FixtureSmokeTest extends TestCase
         $this->dispatch('/browser/secured');
 
         $this->assertStringContainsString('Guest', $this->getContent());
+    }
+
+    protected function appFactory(): callable
+    {
+        return static fn () => require __DIR__ . '/app.php';
     }
 }

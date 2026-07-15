@@ -36,8 +36,6 @@ trait FunctionalTrait
 
     private mixed $response = null;
 
-    abstract protected function appFactory(): callable;
-
     public function dispatch(string $url): void
     {
         $factory = $this->appFactory();
@@ -55,6 +53,8 @@ trait FunctionalTrait
     {
         return $this->response()->getContent();
     }
+
+    abstract protected function appFactory(): callable;
 
     protected function dispatcher(): Dispatcher
     {

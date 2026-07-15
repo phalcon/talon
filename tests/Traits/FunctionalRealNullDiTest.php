@@ -32,8 +32,23 @@ use PHPUnit\Framework\TestCase;
  */
 final class FunctionalRealNullDiTest extends TestCase
 {
-    use FunctionalTrait;
     use FunctionalAssertionsTrait;
+    use FunctionalTrait;
+
+    public function testRealResolveDiThrowsWhenGetDiReturnsNull(): void
+    {
+        if (!Environment::viaImplementation()) {
+            $this->markTestSkipped(
+                'InjectionAwareInterface::getDI() is only nullable under the phalcon/phalcon (v6) provider'
+            );
+        }
+
+        $this->dispatch('/test/hello');
+
+        $this->expectException(ResponseNotDispatched::class);
+
+        $this->assertController('test');
+    }
 
     protected function appFactory(): callable
     {
@@ -54,20 +69,5 @@ final class FunctionalRealNullDiTest extends TestCase
                 }
             };
         };
-    }
-
-    public function testRealResolveDiThrowsWhenGetDiReturnsNull(): void
-    {
-        if (!Environment::viaImplementation()) {
-            $this->markTestSkipped(
-                'InjectionAwareInterface::getDI() is only nullable under the phalcon/phalcon (v6) provider'
-            );
-        }
-
-        $this->dispatch('/test/hello');
-
-        $this->expectException(ResponseNotDispatched::class);
-
-        $this->assertController('test');
     }
 }

@@ -23,33 +23,6 @@ use function dirname;
 
 final class SuiteMapTest extends TestCase
 {
-    public function testConfiguredProjectMergesGlobalsIntoSuites(): void
-    {
-        $map = new SuiteMap($this->fixture('configured'));
-
-        $unit = $map->resolve('unit');
-        $this->assertSame($this->fixture('configured') . '/custom/unit.xml', $unit->config);
-        $this->assertSame(['extension=fake.so'], $unit->phpFlags);
-        $this->assertSame(['GLOBAL_ENV' => 'yes', 'SHARED' => 'global'], $unit->env);
-        $this->assertSame(['--testdox'], $unit->args);
-
-        $db = $map->resolve('db');
-        $this->assertSame(['extension=fake.so', 'memory_limit=1G'], $db->phpFlags);
-        $this->assertSame(
-            ['GLOBAL_ENV' => 'yes', 'SHARED' => 'suite', 'DB_ONLY' => '1'],
-            $db->env
-        );
-        $this->assertSame('db', $map->defaultSuite());
-    }
-
-    public function testConfigExistenceIsReported(): void
-    {
-        $map = new SuiteMap($this->fixture('configured'));
-
-        $this->assertTrue($map->resolve('unit')->configExists());
-        $this->assertFalse($map->resolve('db')->configExists());
-    }
-
     public function testCastsScalarConfigValuesToStrings(): void
     {
         $map = new SuiteMap($this->fixture('casts'));
@@ -67,6 +40,32 @@ final class SuiteMapTest extends TestCase
         $map = new SuiteMap($this->fixture('clash'));
 
         $this->assertSame(['custom', 'zz'], array_keys($map->suites()));
+    }
+
+    public function testConfigExistenceIsReported(): void
+    {
+        $map = new SuiteMap($this->fixture('configured'));
+
+        $this->assertTrue($map->resolve('unit')->configExists());
+        $this->assertFalse($map->resolve('db')->configExists());
+    }
+    public function testConfiguredProjectMergesGlobalsIntoSuites(): void
+    {
+        $map = new SuiteMap($this->fixture('configured'));
+
+        $unit = $map->resolve('unit');
+        $this->assertSame($this->fixture('configured') . '/custom/unit.xml', $unit->config);
+        $this->assertSame(['extension=fake.so'], $unit->phpFlags);
+        $this->assertSame(['GLOBAL_ENV' => 'yes', 'SHARED' => 'global'], $unit->env);
+        $this->assertSame(['--testdox'], $unit->args);
+
+        $db = $map->resolve('db');
+        $this->assertSame(['extension=fake.so', 'memory_limit=1G'], $db->phpFlags);
+        $this->assertSame(
+            ['GLOBAL_ENV' => 'yes', 'SHARED' => 'suite', 'DB_ONLY' => '1'],
+            $db->env
+        );
+        $this->assertSame('db', $map->defaultSuite());
     }
 
     public function testConventionalProjectDiscoversSuites(): void

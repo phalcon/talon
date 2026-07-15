@@ -22,15 +22,15 @@ final class FunctionalInvalidApplicationTest extends TestCase
 {
     use FunctionalTrait;
 
-    protected function appFactory(): callable
-    {
-        return static fn () => new stdClass();
-    }
-
     public function testDispatchRejectsAppWithoutHandle(): void
     {
         $this->expectException(InvalidApplication::class);
 
         $this->dispatch('/');
+    }
+
+    protected function appFactory(): callable
+    {
+        return static fn () => new stdClass();
     }
 }

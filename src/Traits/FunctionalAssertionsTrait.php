@@ -23,8 +23,6 @@ use function is_int;
  */
 trait FunctionalAssertionsTrait
 {
-    abstract public function getContent(): string;
-
     public function assertAction(string $expected): void
     {
         $this->assertSame($expected, $this->dispatcher()->getActionName());
@@ -71,6 +69,7 @@ trait FunctionalAssertionsTrait
     {
         $this->assertStringContainsString($needle, $this->getContent());
     }
+    abstract public function getContent(): string;
 
     abstract protected function dispatcher(): Dispatcher;
 

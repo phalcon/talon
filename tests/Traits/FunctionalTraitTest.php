@@ -27,67 +27,8 @@ use PHPUnit\Framework\TestCase;
 
 final class FunctionalTraitTest extends TestCase
 {
-    use FunctionalTrait;
     use FunctionalAssertionsTrait;
-
-    protected function appFactory(): callable
-    {
-        return static fn () => require __DIR__ . '/../Fakes/App/app.php';
-    }
-
-    public function testDispatchAndAssertControllerAction(): void
-    {
-        $this->dispatch('/test/hello');
-
-        $this->assertController('test');
-        $this->assertAction('hello');
-        $this->assertResponseContentContains('Operator');
-        $this->assertStringContainsString('Operator', $this->getContent());
-    }
-
-    public function testAssertHeader(): void
-    {
-        $this->dispatch('/test/header');
-
-        $this->assertHeader(['X-Talon' => 'yes']);
-    }
-
-    public function testAssertResponseCode(): void
-    {
-        $this->dispatch('/test/status');
-
-        $this->assertResponseCode(404);
-        $this->assertResponseCode('404');
-    }
-
-    public function testAssertRedirectTo(): void
-    {
-        $this->dispatch('/test/redirect');
-
-        $this->assertRedirectTo('/target');
-    }
-
-    public function testAssertDispatchIsForwarded(): void
-    {
-        $this->dispatch('/test/forward');
-
-        $this->assertDispatchIsForwarded();
-        $this->assertAction('empty');
-    }
-
-    public function testAssertionBeforeDispatchThrows(): void
-    {
-        $this->expectException(ResponseNotDispatched::class);
-
-        $this->assertController('test');
-    }
-
-    public function testGetContentBeforeDispatchThrows(): void
-    {
-        $this->expectException(ResponseNotDispatched::class);
-
-        $this->getContent();
-    }
+    use FunctionalTrait;
 
     public function testAssertActionFailsOnMismatch(): void
     {
@@ -98,6 +39,14 @@ final class FunctionalTraitTest extends TestCase
         $this->assertAction('other');
     }
 
+    public function testAssertDispatchIsForwarded(): void
+    {
+        $this->dispatch('/test/forward');
+
+        $this->assertDispatchIsForwarded();
+        $this->assertAction('empty');
+    }
+
     public function testAssertDispatchIsForwardedFailsWhenNotForwarded(): void
     {
         $this->dispatch('/test/hello');
@@ -105,6 +54,35 @@ final class FunctionalTraitTest extends TestCase
         $this->expectException(AssertionFailedError::class);
 
         $this->assertDispatchIsForwarded();
+    }
+
+    public function testAssertHeader(): void
+    {
+        $this->dispatch('/test/header');
+
+        $this->assertHeader(['X-Talon' => 'yes']);
+    }
+
+    public function testAssertionBeforeDispatchThrows(): void
+    {
+        $this->expectException(ResponseNotDispatched::class);
+
+        $this->assertController('test');
+    }
+
+    public function testAssertRedirectTo(): void
+    {
+        $this->dispatch('/test/redirect');
+
+        $this->assertRedirectTo('/target');
+    }
+
+    public function testAssertResponseCode(): void
+    {
+        $this->dispatch('/test/status');
+
+        $this->assertResponseCode(404);
+        $this->assertResponseCode('404');
     }
 
     public function testAssertResponseCodeFailsWhenStatusHeaderMissing(): void
@@ -123,6 +101,23 @@ final class FunctionalTraitTest extends TestCase
         $this->expectException(AssertionFailedError::class);
 
         $this->assertResponseContentContains('absent');
+    }
+
+    public function testDispatchAndAssertControllerAction(): void
+    {
+        $this->dispatch('/test/hello');
+
+        $this->assertController('test');
+        $this->assertAction('hello');
+        $this->assertResponseContentContains('Operator');
+        $this->assertStringContainsString('Operator', $this->getContent());
+    }
+
+    public function testGetContentBeforeDispatchThrows(): void
+    {
+        $this->expectException(ResponseNotDispatched::class);
+
+        $this->getContent();
     }
 
     public function testProtectedHelpersAreAccessibleFromSubclass(): void
@@ -175,5 +170,10 @@ final class FunctionalTraitTest extends TestCase
 
         $fixture->dispatch('/test/status');
         $fixture->assertResponseCode(404);
+    }
+
+    protected function appFactory(): callable
+    {
+        return static fn () => require __DIR__ . '/../Fakes/App/app.php';
     }
 }
