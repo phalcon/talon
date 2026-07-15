@@ -188,7 +188,6 @@ trait RestAssertionsTrait
      */
     private function emptyFragmentMessage(): string
     {
-        return 'An empty fragment asserts nothing about the response; '
-            . 'pass the fragment you mean to assert.';
+        return 'An empty fragment asserts nothing; pass the fragment you mean to assert.';
     }
 }

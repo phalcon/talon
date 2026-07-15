@@ -140,7 +140,7 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
         $this->respondWith('{"a":1}');
 
         $this->expectException(AssertionFailedError::class);
-        $this->expectExceptionMessageMatches('/empty fragment asserts nothing/');
+        $this->expectExceptionMessageMatches('/An empty fragment asserts nothing; pass the fragment you mean to assert/');
 
         $this->assertResponseContainsJson([]);
     }
@@ -228,7 +228,7 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
         $this->respondWith('{"a":1}');
 
         $this->expectException(AssertionFailedError::class);
-        $this->expectExceptionMessageMatches('/empty fragment asserts nothing/');
+        $this->expectExceptionMessageMatches('/An empty fragment asserts nothing; pass the fragment you mean to assert/');
 
         $this->assertResponseNotContainsJson([]);
     }

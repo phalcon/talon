@@ -32,6 +32,13 @@ final class RestTraitTest extends AbstractUnitTestCase
     use RestTrait;
 
     /**
+     * Uploads use a fixture rather than __FILE__: a multipart body embeds the
+     * file's contents, so uploading the test itself makes it "contain" every
+     * string this file asserts on, and the assertions pass whatever was sent.
+     */
+    private const FIXTURE = __DIR__ . '/../Fakes/Rest/upload.txt';
+
+    /**
      * @var array<int, array{method: string, url: string, headers: array<int, string>, body: string}>
      */
     private array $requests = [];
@@ -258,8 +265,10 @@ final class RestTraitTest extends AbstractUnitTestCase
         $this->sendPost('/login', ['username' => 'sarah']);
 
         $this->assertSame('POST', $this->requests[0]['method']);
-        $this->assertStringContainsString('username', $this->requests[0]['body']);
-        $this->assertStringContainsString('sarah', $this->requests[0]['body']);
+        // Asserted as urlencoded rather than by field name: 'username' and
+        // 'sarah' both appear in a JSON body too, so a looser check cannot tell
+        // the form path from the JSON one.
+        $this->assertSame('username=sarah', $this->requests[0]['body']);
     }
 
     public function testSendPostSerializesJsonWhenContentTypeIsJson(): void
@@ -280,20 +289,36 @@ final class RestTraitTest extends AbstractUnitTestCase
      */
     public function testSendPostUploadsAFileGivenAPlainPath(): void
     {
-        $this->sendPost('/upload', ['name' => 'Acme'], ['doc' => __FILE__]);
+        $this->sendPost('/upload', ['name' => 'Acme'], ['doc' => self::FIXTURE]);
 
         $this->assertSame('POST', $this->requests[0]['method']);
         $this->assertStringContainsString('multipart/form-data', $this->contentTypeOf(0));
-        $this->assertStringContainsString('RestTraitTest.php', $this->requests[0]['body']);
+        $this->assertStringContainsString('filename="upload.txt"', $this->requests[0]['body']);
+        $this->assertStringContainsString('talon upload fixture', $this->requests[0]['body']);
         $this->assertStringContainsString('Acme', $this->requests[0]['body']);
     }
 
     public function testSendPostUploadsAFileGivenTheFilesShape(): void
     {
-        $this->sendPost('/upload', [], ['doc' => ['tmp_name' => __FILE__, 'name' => 'custom.php']]);
+        $this->sendPost('/upload', [], ['doc' => ['tmp_name' => self::FIXTURE, 'name' => 'custom.txt']]);
 
         $this->assertStringContainsString('multipart/form-data', $this->contentTypeOf(0));
-        $this->assertStringContainsString('custom.php', $this->requests[0]['body']);
+        $this->assertStringContainsString('filename="custom.txt"', $this->requests[0]['body']);
+    }
+
+    /**
+     * More than one file, because a single-file test cannot notice a
+     * normalisation that quietly keeps only the first.
+     */
+    public function testSendPostUploadsSeveralFiles(): void
+    {
+        $this->sendPost('/upload', [], [
+            'first'  => self::FIXTURE,
+            'second' => ['tmp_name' => self::FIXTURE, 'name' => 'second.txt'],
+        ]);
+
+        $this->assertStringContainsString('filename="upload.txt"', $this->requests[0]['body']);
+        $this->assertStringContainsString('filename="second.txt"', $this->requests[0]['body']);
     }
 
     public function testSendUppercasesTheMethod(): void

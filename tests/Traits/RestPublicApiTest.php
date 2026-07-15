@@ -81,6 +81,10 @@ final class RestPublicApiTest extends TestCase
 
         $this->assertSame('http://127.0.0.1:8080', $subject->rawBaseUrl());
         $this->assertNull($subject->rawHttpClient());
+
+        $subject->useRestBaseUrl('http://injected.test:9000');
+
+        $this->assertSame('http://injected.test:9000', $subject->rawBaseUrl());
     }
 
     public function testRangeAssertionsAreCallableFromOutsideTheHierarchy(): void
