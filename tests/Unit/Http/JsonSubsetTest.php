@@ -23,9 +23,25 @@ final class JsonSubsetTest extends AbstractUnitTestCase
         $this->assertTrue(JsonSubset::contains(['data' => []], ['data' => []]));
     }
 
-    public function testEmptyExpectedMatchesAnything(): void
+    /**
+     * The trap this guards: ['data' => []] must mean "data is empty", not
+     * "data exists". rest-api's seeSuccessJsonResponse() defaults straight
+     * into this shape.
+     */
+    public function testEmptyExpectedListRequiresEmptyActualList(): void
     {
-        $this->assertTrue(JsonSubset::contains(['a' => 1], []));
+        $this->assertFalse(JsonSubset::contains(['data' => [['id' => 1]]], ['data' => []]));
+        $this->assertTrue(JsonSubset::contains(['data' => []], ['data' => []]));
+    }
+
+    /**
+     * An empty expected list means "empty", not "anything" - as a pure subset
+     * it would match every document and assert nothing.
+     */
+    public function testEmptyExpectedRequiresEmptyActual(): void
+    {
+        $this->assertFalse(JsonSubset::contains(['a' => 1], []));
+        $this->assertTrue(JsonSubset::contains([], []));
     }
 
     public function testExpectedArrayAgainstScalarActualFails(): void

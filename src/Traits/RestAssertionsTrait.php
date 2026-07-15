@@ -92,6 +92,8 @@ trait RestAssertionsTrait
      */
     public function assertResponseContainsJson(array $json): void
     {
+        $this->assertNotSame([], $json, $this->emptyFragmentMessage());
+
         $this->assertTrue(
             JsonSubset::contains($this->decodedResponse(), $json),
             'Failed asserting that the response contains the given JSON fragment. Response: '
@@ -139,6 +141,8 @@ trait RestAssertionsTrait
      */
     public function assertResponseNotContainsJson(array $json): void
     {
+        $this->assertNotSame([], $json, $this->emptyFragmentMessage());
+
         $this->assertFalse(
             JsonSubset::contains($this->decodedResponse(), $json),
             'Failed asserting that the response does not contain the given JSON fragment.'
@@ -177,5 +181,14 @@ trait RestAssertionsTrait
         $decoded = json_decode($this->grabResponse(), true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Traits cannot declare constants until PHP 8.2, so this stands in for one.
+     */
+    private function emptyFragmentMessage(): string
+    {
+        return 'An empty fragment asserts nothing about the response; '
+            . 'pass the fragment you mean to assert.';
     }
 }

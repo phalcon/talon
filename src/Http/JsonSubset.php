@@ -23,6 +23,11 @@ use function is_array;
  * Keys and list elements present in the actual document but absent from the
  * expected one are ignored, so a fragment can be asserted against a full
  * envelope. List elements match in any order.
+ *
+ * The one place this stops being a subset is the empty list: ['data' => []]
+ * requires data to be empty rather than matching any data at all. Read as a
+ * pure subset it would match everything, which is never what the caller meant
+ * and asserts nothing.
  */
 final class JsonSubset
 {
@@ -55,6 +60,10 @@ final class JsonSubset
      */
     private static function containsList(array $actual, array $expected): bool
     {
+        if ([] === $expected) {
+            return [] === $actual;
+        }
+
         foreach ($expected as $item) {
             $found = false;
             foreach ($actual as $candidate) {

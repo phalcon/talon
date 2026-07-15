@@ -101,6 +101,19 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
     }
 
     /**
+     * ['data' => []] must assert that data IS empty, not merely that the key is
+     * there - the vacuous reading is the one a caller never means.
+     */
+    public function testAssertResponseContainsJsonEmptyListMeansEmpty(): void
+    {
+        $this->respondWith('{"data":[{"id":1}]}');
+
+        $this->expectException(AssertionFailedError::class);
+
+        $this->assertResponseContainsJson(['data' => []]);
+    }
+
+    /**
      * The failure message carries the response body - without it a failing
      * fragment assertion says nothing about what actually came back.
      */
@@ -120,6 +133,16 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
 
         $this->assertResponseContainsJson(['data' => [['name' => 'Acme']]]);
         $this->assertResponseNotContainsJson(['data' => [['name' => 'Other']]]);
+    }
+
+    public function testAssertResponseContainsJsonRejectsAnEmptyFragment(): void
+    {
+        $this->respondWith('{"a":1}');
+
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessageMatches('/empty fragment asserts nothing/');
+
+        $this->assertResponseContainsJson([]);
     }
 
     public function testAssertResponseEqualsFailsOnADifferentBody(): void
@@ -198,6 +221,16 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
         $this->expectException(AssertionFailedError::class);
 
         $this->assertResponseNotContainsJson(['data' => [['name' => 'Acme']]]);
+    }
+
+    public function testAssertResponseNotContainsJsonRejectsAnEmptyFragment(): void
+    {
+        $this->respondWith('{"a":1}');
+
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessageMatches('/empty fragment asserts nothing/');
+
+        $this->assertResponseNotContainsJson([]);
     }
 
     public function testAssertResponseNotMatchesJsonType(): void

@@ -36,10 +36,17 @@ final class JsonTypeTest extends AbstractUnitTestCase
         $this->assertNull(JsonType::match(['a' => 1], []));
     }
 
-    public function testIntegerIsNotAFloat(): void
+    /**
+     * JSON has one number type: {"price": 10} decodes to int and
+     * {"price": 10.5} to float, so 'float' has to accept both or it fails on
+     * every whole number. 'integer' stays strict.
+     */
+    public function testFloatAcceptsWholeNumbersButIntegerStaysStrict(): void
     {
-        $this->assertNotNull(JsonType::match(['a' => 1], ['a' => 'float']));
+        $this->assertNull(JsonType::match(['a' => 1], ['a' => 'float']));
         $this->assertNull(JsonType::match(['a' => 1.5], ['a' => 'float']));
+        $this->assertNotNull(JsonType::match(['a' => 1.5], ['a' => 'integer']));
+        $this->assertNull(JsonType::match(['a' => 1], ['a' => 'integer']));
     }
 
     /**

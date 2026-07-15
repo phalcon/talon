@@ -29,11 +29,16 @@ use function strtotime;
  * Validates a decoded JSON document against a map of type expectations.
  *
  * Keys absent from the type map are ignored, so a map can describe the part of
- * an envelope a test cares about while the document carries more. Types are
- * strict: an int does not satisfy 'float'.
+ * an envelope a test cares about while the document carries more.
  *
  * Supported specs: 'array', 'boolean', 'float', 'integer', 'null', 'string',
  * optionally suffixed with ':date', and joined with '|' to form a union.
+ *
+ * 'float' accepts an int as well as a float. JSON has a single number type, so
+ * json_decode() hands back int(10) for {"price": 10} and float(10.5) for
+ * {"price": 10.5} - the same field is one or the other depending on the value
+ * it happens to carry. A strict 'float' would fail on every whole number.
+ * 'integer' stays strict, so it still rejects 10.5.
  */
 final class JsonType
 {
@@ -97,7 +102,7 @@ final class JsonType
         $matches = match ($alternative) {
             'array'   => is_array($value),
             'boolean' => is_bool($value),
-            'float'   => is_float($value),
+            'float'   => is_float($value) || is_int($value),
             'integer' => is_int($value),
             'null'    => null === $value,
             'string'  => is_string($value),
