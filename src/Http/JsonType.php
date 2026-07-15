@@ -54,30 +54,15 @@ final class JsonType
         }
 
         foreach ($types as $key => $expected) {
-            $current = '' === $path ? (string) $key : $path . '.' . $key;
+            $current = self::path($path, $key);
 
             if (!array_key_exists($key, $actual)) {
                 return sprintf("Key '%s' is missing", $current);
             }
 
-            $value = $actual[$key];
-
-            if (is_array($expected)) {
-                $error = self::match($value, $expected, $current);
-                if (null !== $error) {
-                    return $error;
-                }
-
-                continue;
-            }
-
-            if (!is_string($expected) || !self::matchesSpec($value, $expected)) {
-                return sprintf(
-                    "Key '%s' expected '%s', got '%s'",
-                    $current,
-                    is_string($expected) ? $expected : get_debug_type($expected),
-                    get_debug_type($value)
-                );
+            $error = self::matchValue($actual[$key], $expected, $current);
+            if (null !== $error) {
+                return $error;
             }
         }
 
@@ -125,5 +110,41 @@ final class JsonType
         }
 
         return false;
+    }
+
+    /**
+     * Checks one key's value against its spec: a nested map recurses, anything
+     * else is a leaf. Keeping the two failure modes apart - the spec is not a
+     * string, or the value does not satisfy it - is what lets each report
+     * itself, rather than one branch re-deriving which case it caught.
+     */
+    private static function matchValue(mixed $value, mixed $expected, string $path): ?string
+    {
+        if (is_array($expected)) {
+            return self::match($value, $expected, $path);
+        }
+
+        if (!is_string($expected)) {
+            return self::typeError($path, get_debug_type($expected), $value);
+        }
+
+        if (!self::matchesSpec($value, $expected)) {
+            return self::typeError($path, $expected, $value);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array-key $key
+     */
+    private static function path(string $path, mixed $key): string
+    {
+        return '' === $path ? (string) $key : $path . '.' . $key;
+    }
+
+    private static function typeError(string $path, string $expected, mixed $value): string
+    {
+        return sprintf("Key '%s' expected '%s', got '%s'", $path, $expected, get_debug_type($value));
     }
 }

@@ -47,6 +47,8 @@ final class JsonTypeTest extends AbstractUnitTestCase
         $this->assertNull(JsonType::match(['a' => 1.5], ['a' => 'float']));
         $this->assertNotNull(JsonType::match(['a' => 1.5], ['a' => 'integer']));
         $this->assertNull(JsonType::match(['a' => 1], ['a' => 'integer']));
+        $this->assertNotNull(JsonType::match(['a' => 'x'], ['a' => 'float']));
+        $this->assertNotNull(JsonType::match(['a' => null], ['a' => 'float']));
     }
 
     /**
