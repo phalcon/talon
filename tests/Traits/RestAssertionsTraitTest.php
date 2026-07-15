@@ -142,7 +142,7 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
         $this->expectException(AssertionFailedError::class);
         $this->expectExceptionMessageMatches(
             '/An empty fragment asserts nothing; pass the fragment you mean to assert/'
-            );
+        );
 
         $this->assertResponseContainsJson([]);
     }
@@ -234,7 +234,7 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
         $this->expectException(AssertionFailedError::class);
         $this->expectExceptionMessageMatches(
             '/An empty fragment asserts nothing; pass the fragment you mean to assert/'
-            );
+        );
 
         $this->assertResponseNotContainsJson([]);
     }
@@ -316,8 +316,8 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
      * @dataProvider providerRangeBoundaries
      */
     public function testRangeAssertionBoundaries(
-        int $code, 
-        string $method, 
+        int $code,
+        string $method,
         bool $shouldPass
     ): void {
         $this->respondWith('{}', $code);
