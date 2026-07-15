@@ -164,8 +164,11 @@ jobs:
       - name: Tests with coverage
         run: composer test-coverage
 
-      - name: Mutation testing
-        run: composer test-mutation
+      # Mutation testing is not run here: infection pulls thecodingmachine/safe
+      # at dev-master, which autoloads 80 files eagerly on every request and
+      # emits deprecations on PHP 8.5. The package is out of composer.json until
+      # the minimum PHP version moves past 8.1; resources/infection.json5 stays,
+      # so `composer require --dev infection/infection` restores the setup.
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
