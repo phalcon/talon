@@ -1,0 +1,124 @@
+<?php
+
+/**
+ * This file is part of the Phalcon Talon.
+ *
+ * (c) Phalcon Team <team@phalcon.io>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+declare(strict_types=1);
+
+namespace Phalcon\Talon\Http;
+
+use function array_key_exists;
+use function explode;
+use function get_debug_type;
+use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_string;
+use function sprintf;
+use function str_contains;
+use function strtotime;
+
+/**
+ * Validates a decoded JSON document against a map of type expectations.
+ *
+ * Keys absent from the type map are ignored, so a map can describe the part of
+ * an envelope a test cares about while the document carries more. Types are
+ * strict: an int does not satisfy 'float'.
+ *
+ * Supported specs: 'array', 'boolean', 'float', 'integer', 'null', 'string',
+ * optionally suffixed with ':date', and joined with '|' to form a union.
+ */
+final class JsonType
+{
+    /**
+     * @param array<array-key, mixed> $types
+     *
+     * @return string|null null when the document matches, otherwise the reason
+     */
+    public static function match(mixed $actual, array $types, string $path = ''): ?string
+    {
+        if (!is_array($actual)) {
+            return sprintf("Key '%s' expected an object, got '%s'", $path, get_debug_type($actual));
+        }
+
+        foreach ($types as $key => $expected) {
+            $current = '' === $path ? (string) $key : $path . '.' . $key;
+
+            if (!array_key_exists($key, $actual)) {
+                return sprintf("Key '%s' is missing", $current);
+            }
+
+            $value = $actual[$key];
+
+            if (is_array($expected)) {
+                $error = self::match($value, $expected, $current);
+                if (null !== $error) {
+                    return $error;
+                }
+
+                continue;
+            }
+
+            if (!is_string($expected) || !self::matchesSpec($value, $expected)) {
+                return sprintf(
+                    "Key '%s' expected '%s', got '%s'",
+                    $current,
+                    is_string($expected) ? $expected : get_debug_type($expected),
+                    get_debug_type($value)
+                );
+            }
+        }
+
+        return null;
+    }
+
+    private static function matchesFilter(mixed $value, string $filter): bool
+    {
+        return match ($filter) {
+            'date'  => is_string($value) && false !== strtotime($value),
+            default => false,
+        };
+    }
+
+    private static function matchesSingle(mixed $value, string $alternative): bool
+    {
+        $filter = null;
+        if (str_contains($alternative, ':')) {
+            [$alternative, $filter] = explode(':', $alternative, 2);
+        }
+
+        $matches = match ($alternative) {
+            'array'   => is_array($value),
+            'boolean' => is_bool($value),
+            'float'   => is_float($value),
+            'integer' => is_int($value),
+            'null'    => null === $value,
+            'string'  => is_string($value),
+            default   => false,
+        };
+
+        if (!$matches) {
+            return false;
+        }
+
+        return null === $filter || self::matchesFilter($value, $filter);
+    }
+
+    private static function matchesSpec(mixed $value, string $spec): bool
+    {
+        foreach (explode('|', $spec) as $alternative) {
+            if (self::matchesSingle($value, $alternative)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
