@@ -22,8 +22,17 @@ use PHPUnit\Framework\TestCase;
 
 final class FunctionalNullDiTest extends TestCase
 {
-    use FunctionalTrait;
     use FunctionalAssertionsTrait;
+    use FunctionalTrait;
+
+    public function testNullDiThrows(): void
+    {
+        $this->dispatch('/test/hello');
+
+        $this->expectException(ResponseNotDispatched::class);
+
+        $this->assertController('test');
+    }
 
     protected function appFactory(): callable
     {
@@ -33,14 +42,5 @@ final class FunctionalNullDiTest extends TestCase
     protected function resolveDi(InjectionAwareInterface $application): DiInterface
     {
         throw new ResponseNotDispatched();
-    }
-
-    public function testNullDiThrows(): void
-    {
-        $this->dispatch('/test/hello');
-
-        $this->expectException(ResponseNotDispatched::class);
-
-        $this->assertController('test');
     }
 }

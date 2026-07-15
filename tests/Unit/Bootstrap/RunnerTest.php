@@ -51,41 +51,6 @@ final class RunnerTest extends TestCase
         parent::tearDown();
     }
 
-    public function testRunsStagesInOrderWithHooks(): void
-    {
-        /** @var ArrayObject<int, string> $order */
-        $order    = new ArrayObject();
-        $settings = Settings::fromArray(['root' => '/app']);
-
-        $runner = new RecordingRunner($settings, $order);
-
-        $runner
-            ->before(Stage::Environment, function () use ($order): void {
-                $order->append('before-env');
-            })
-            ->after(Stage::Settings, function () use ($order): void {
-                $order->append('after-settings');
-            });
-
-        $result = $runner->boot();
-
-        $this->assertSame($settings, $result);
-        $this->assertSame(
-            ['before-env', 'env', 'dirs', 'settings', 'after-settings'],
-            $order->getArrayCopy()
-        );
-    }
-
-    public function testRealRunnerRegistersSettingsIntoTalon(): void
-    {
-        Talon::reset();
-        $settings = Settings::fromArray(['root' => dirname(__DIR__, 3)]);
-
-        Runner::for($settings)->boot();
-
-        $this->assertSame($settings, Talon::settings());
-    }
-
     public function testBootCreatesTheOutputDirectory(): void
     {
         Talon::reset();
@@ -246,5 +211,40 @@ final class RunnerTest extends TestCase
             $this->assertSame('100', ini_get('xdebug.max_nesting_level'));
             $this->assertSame('4', ini_get('xdebug.var_display_max_depth'));
         }
+    }
+
+    public function testRealRunnerRegistersSettingsIntoTalon(): void
+    {
+        Talon::reset();
+        $settings = Settings::fromArray(['root' => dirname(__DIR__, 3)]);
+
+        Runner::for($settings)->boot();
+
+        $this->assertSame($settings, Talon::settings());
+    }
+
+    public function testRunsStagesInOrderWithHooks(): void
+    {
+        /** @var ArrayObject<int, string> $order */
+        $order    = new ArrayObject();
+        $settings = Settings::fromArray(['root' => '/app']);
+
+        $runner = new RecordingRunner($settings, $order);
+
+        $runner
+            ->before(Stage::Environment, function () use ($order): void {
+                $order->append('before-env');
+            })
+            ->after(Stage::Settings, function () use ($order): void {
+                $order->append('after-settings');
+            });
+
+        $result = $runner->boot();
+
+        $this->assertSame($settings, $result);
+        $this->assertSame(
+            ['before-env', 'env', 'dirs', 'settings', 'after-settings'],
+            $order->getArrayCopy()
+        );
     }
 }

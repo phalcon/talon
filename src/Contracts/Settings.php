@@ -15,6 +15,9 @@ namespace Phalcon\Talon\Contracts;
 
 interface Settings
 {
+    public function cachePath(string $relative = ''): string;
+
+    public function dataPath(string $relative = ''): string;
     public function get(string $key, mixed $default = null): mixed;
 
     public function getDatabaseDsn(string $driver): string;
@@ -28,10 +31,6 @@ interface Settings
      * @return array<string, mixed>
      */
     public function getServiceOptions(string $name): array;
-
-    public function cachePath(string $relative = ''): string;
-
-    public function dataPath(string $relative = ''): string;
 
     public function logsPath(string $relative = ''): string;
 

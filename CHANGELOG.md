@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.0](https://github.com/phalcon/talon/releases/tag/v0.8.0) (2026-07-15)
+
+### Changed
+
+### Added
+
+- Added a REST/JSON test surface: `Phalcon\Talon\Traits\RestTrait` (the full verb set, file uploads, request headers that persist across requests, `amBearerAuthenticated()`/`amHttpAuthenticated()`, redirect control, and response grabbers), `Phalcon\Talon\Traits\RestAssertionsTrait` (status, range, body, header, and JSON assertions), and `Phalcon\Talon\PHPUnit\AbstractRestTestCase` which composes both. A raw string body is sent as `application/json` unless a content type is set, and `$files` takes either a plain path or the `$_FILES` shape. [#19](https://github.com/phalcon/talon/issues/19)
+- Added `Phalcon\Talon\Http\HttpCode` - HTTP status constants plus `getDescription()`, which returns the `404 (Not Found)` form. It is deliberately an independent implementation of the standard reason phrases rather than a lookup into the application under test, so that asserting an application's emitted status string against it actually asserts something. [#19](https://github.com/phalcon/talon/issues/19)
+- Added `Phalcon\Talon\Http\JsonType` - validates a decoded JSON document against a map of type expectations (`string`, `integer`, `float`, `boolean`, `array`, `null`, the `:date` filter, `|` unions, and nested maps). Keys absent from the map are ignored, so a map can describe just the part of an envelope a test cares about. `float` accepts a whole number too - JSON has a single number type, so `{"price": 10}` decodes to an int and a strict `float` would fail on every round value. `integer` stays strict. [#19](https://github.com/phalcon/talon/issues/19)
+- Added `Phalcon\Talon\Http\JsonSubset` - recursive subset matching, so a fragment can be asserted against a full document. Keys and list elements present in the response but absent from the expectation are ignored, and list elements match in any order. An empty expected list is the exception: `['data' => []]` asserts that `data` is empty rather than matching any `data` at all. [#19](https://github.com/phalcon/talon/issues/19)
+- Added `TALON_REST_URL` to `Settings::fromEnv()`, readable via `Settings::get('rest_url')` and defaulting to `http://127.0.0.1:8080`. It is resolved through Talon's shared `Settings` and so is the same for every test in a run; `RestTrait::useRestBaseUrl()` points an individual test somewhere else. [#19](https://github.com/phalcon/talon/issues/19)
+
+### Fixed
+
+### Removed
+
 ## [0.7.0](https://github.com/phalcon/talon/releases/tag/v0.7.0) (2026-07-10)
 
 ### Changed

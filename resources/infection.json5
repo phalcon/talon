@@ -29,8 +29,22 @@
                 "Phalcon\\Talon\\Cli\\Input::wantsVersion"
             ]
         },
+        "Break_": {
+            // The break only stops scanning once a match is found; without it
+            // the loop keeps looking and $found stays true. Same answer, more
+            // work - not observable from a test.
+            "ignore": ["Phalcon\\Talon\\Http\\JsonSubset::containsList"]
+        },
         "CastString": {
             "ignore": [
+                // json_encode() only returns false for input it cannot encode
+                // (malformed UTF-8, recursion, INF/NAN). Params reaching a REST
+                // verb are always encodable, so the cast is a no-op.
+                "Phalcon\\Talon\\Traits\\RestTrait::send",
+                // (string) applies to $error, which is only rendered when
+                // assertNull() fails - i.e. when it is a non-null string. The
+                // cast is a no-op on every path that can observe it.
+                "Phalcon\\Talon\\Traits\\RestAssertionsTrait::assertResponseMatchesJsonType",
                 // Discovered suite names are non-numeric filename stems and
                 // preg_replace with a fixed valid pattern never returns null;
                 // these casts only satisfy static analysis. Method-scoped:
@@ -79,9 +93,14 @@
             "ignore": ["Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::99"]
         },
         "IncrementInteger": {
-            // Every accumulated query starts with the "\n" separator, so
-            // substr($query, 1, ...) only removes what trim() strips anyway.
-            "ignore": ["Phalcon\\Talon\\Database\\StatementSplitter::split::64"]
+            "ignore": [
+                // Every accumulated query starts with the "\n" separator, so
+                // substr($query, 1, ...) only removes what trim() strips anyway.
+                "Phalcon\\Talon\\Database\\StatementSplitter::split::64",
+                // The type DSL has no spec carrying two colons, so raising
+                // explode()'s limit cannot change how a spec splits.
+                "Phalcon\\Talon\\Http\\JsonType::matchesSingle"
+            ]
         },
         "LogicalOrAllSubExprNegation": {
             "ignore": [
@@ -99,7 +118,7 @@
         "MatchArmRemoval": {
             // The default arm is dead code: getDatabaseOptions() already threw
             // UnknownDriver for any driver outside DRIVERS before the match.
-            "ignore": ["Phalcon\\Talon\\Settings::getDatabaseDsn::186"]
+            "ignore": ["Phalcon\\Talon\\Settings::getDatabaseDsn::250"]
         },
         "MethodCallRemoval": {
             "ignore": [
@@ -116,7 +135,7 @@
         "Throw_": {
             // Same dead default arm; line-scoped so the live throw in
             // getDatabaseOptions() stays mutable.
-            "ignore": ["Phalcon\\Talon\\Settings::getDatabaseDsn::201"]
+            "ignore": ["Phalcon\\Talon\\Settings::getDatabaseDsn::265"]
         },
         "UnwrapTrim": {
             // Lines are trimmed before being accumulated, so the final

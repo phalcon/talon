@@ -32,8 +32,8 @@ use function version_compare;
 
 abstract class AbstractUnitTestCase extends TestCase
 {
-    use ReflectionTrait;
     use FileSystemTrait;
+    use ReflectionTrait;
 
     protected function setUp(): void
     {

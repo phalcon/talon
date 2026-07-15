@@ -18,6 +18,13 @@ use PHPUnit\Framework\TestCase;
 
 final class InputTest extends TestCase
 {
+    public function testAllowlistedOptionsCombine(): void
+    {
+        $input = Input::fromArgv(['talon', '-h', '--version']);
+
+        $this->assertTrue($input->wantsHelp());
+        $this->assertTrue($input->wantsVersion());
+    }
     public function testCommandAndArguments(): void
     {
         $input = Input::fromArgv(['talon', 'run', 'mysql', 'pgsql']);
@@ -27,14 +34,6 @@ final class InputTest extends TestCase
         $this->assertSame([], $input->passthrough());
         $this->assertFalse($input->wantsHelp());
         $this->assertFalse($input->wantsVersion());
-    }
-
-    public function testAllowlistedOptionsCombine(): void
-    {
-        $input = Input::fromArgv(['talon', '-h', '--version']);
-
-        $this->assertTrue($input->wantsHelp());
-        $this->assertTrue($input->wantsVersion());
     }
 
     public function testDashDashProtectsAllowlistedTokens(): void

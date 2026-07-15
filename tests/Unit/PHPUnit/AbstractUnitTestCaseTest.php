@@ -22,14 +22,6 @@ use ReflectionMethod;
 
 final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
 {
-    public function testInheritsTraitHelpers(): void
-    {
-        $this->assertSame('/x/', $this->getDirSeparator('/x'));
-
-        $this->checkPhalconAvailable();
-        $this->addToAssertionCount(1);
-    }
-
     public function testCheckExtensionIsLoadedPassesForLoadedExtension(): void
     {
         $this->checkExtensionIsLoaded('json');
@@ -47,13 +39,71 @@ final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
         }
     }
 
-    public function testMockWithoutConstructorSkipsConstructor(): void
+    public function testHelperMethodVisibility(): void
     {
-        $subject = $this->mockWithoutConstructor(MockSubject::class);
+        // Execute each helper so this test covers the mutated method bodies
+        // (infection only pairs tests with mutants via line coverage).
+        $this->checkExtensionIsLoaded('json');
+        $this->checkPhalconAvailable();
+        $this->mockWithConstructor(MockSubject::class, ['custom']);
+        $this->mockWithoutConstructor(MockSubject::class);
 
-        $this->assertInstanceOf(MockSubject::class, $subject);
-        $this->assertSame('default', $subject->tag);
-        $this->assertFalse($subject->booted);
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'checkExtensionIsLoaded'))->isPublic());
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'checkPhalconAvailable'))->isPublic());
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'mockWithConstructor'))->isPublic());
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'mockWithoutConstructor'))->isPublic());
+        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'phalconAvailable'))->isProtected());
+    }
+    public function testInheritsTraitHelpers(): void
+    {
+        $this->assertSame('/x/', $this->getDirSeparator('/x'));
+
+        $this->checkPhalconAvailable();
+        $this->addToAssertionCount(1);
+    }
+
+    public function testMockMethodOverrideAcceptsClosure(): void
+    {
+        $subject = $this->mockWithoutConstructor(MockSubject::class, [
+            'greeting' => static fn (): string => 'stubbed',
+        ]);
+
+        $this->assertSame('stubbed', $subject->greeting());
+    }
+
+    public function testMockMethodOverrideReturnsValue(): void
+    {
+        $subject = $this->mockWithoutConstructor(MockSubject::class, ['value' => 99]);
+
+        $this->assertSame(99, $subject->value());
+    }
+
+    public function testMockPropertyOverride(): void
+    {
+        $subject = $this->mockWithoutConstructor(MockSubject::class, ['tag' => 'overridden']);
+
+        $this->assertSame('overridden', $subject->tag);
+    }
+
+    public function testMockStubsMultipleMethodOverrides(): void
+    {
+        $subject = $this->mockWithoutConstructor(MockSubject::class, [
+            'greeting' => static fn (): string => 'stubbed',
+            'value'    => 7,
+        ]);
+
+        $this->assertSame('stubbed', $subject->greeting());
+        $this->assertSame(7, $subject->value());
+    }
+
+    public function testMockWithConstructorNormalizesCtorArgKeys(): void
+    {
+        $plain = $this->mockWithConstructor(MockSubject::class, ['label' => 'custom']);
+        $this->assertSame('custom', $plain->tag);
+
+        $stubbed = $this->mockWithConstructor(MockSubject::class, ['label' => 'custom'], ['boot' => null]);
+        $this->assertSame('custom', $stubbed->tag);
+        $this->assertFalse($stubbed->booted);
     }
 
     public function testMockWithConstructorRunsConstructor(): void
@@ -73,27 +123,13 @@ final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
         $this->assertFalse($subject->booted);
     }
 
-    public function testMockMethodOverrideReturnsValue(): void
+    public function testMockWithoutConstructorSkipsConstructor(): void
     {
-        $subject = $this->mockWithoutConstructor(MockSubject::class, ['value' => 99]);
+        $subject = $this->mockWithoutConstructor(MockSubject::class);
 
-        $this->assertSame(99, $subject->value());
-    }
-
-    public function testMockMethodOverrideAcceptsClosure(): void
-    {
-        $subject = $this->mockWithoutConstructor(MockSubject::class, [
-            'greeting' => static fn (): string => 'stubbed',
-        ]);
-
-        $this->assertSame('stubbed', $subject->greeting());
-    }
-
-    public function testMockPropertyOverride(): void
-    {
-        $subject = $this->mockWithoutConstructor(MockSubject::class, ['tag' => 'overridden']);
-
-        $this->assertSame('overridden', $subject->tag);
+        $this->assertInstanceOf(MockSubject::class, $subject);
+        $this->assertSame('default', $subject->tag);
+        $this->assertFalse($subject->booted);
     }
 
     public function testSetUpResetsTheDefaultDi(): void
@@ -130,42 +166,5 @@ final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
         $this->assertSame($default, Di::getDefault());
 
         Di::reset();
-    }
-
-    public function testHelperMethodVisibility(): void
-    {
-        // Execute each helper so this test covers the mutated method bodies
-        // (infection only pairs tests with mutants via line coverage).
-        $this->checkExtensionIsLoaded('json');
-        $this->checkPhalconAvailable();
-        $this->mockWithConstructor(MockSubject::class, ['custom']);
-        $this->mockWithoutConstructor(MockSubject::class);
-
-        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'checkExtensionIsLoaded'))->isPublic());
-        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'checkPhalconAvailable'))->isPublic());
-        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'mockWithConstructor'))->isPublic());
-        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'mockWithoutConstructor'))->isPublic());
-        $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'phalconAvailable'))->isProtected());
-    }
-
-    public function testMockStubsMultipleMethodOverrides(): void
-    {
-        $subject = $this->mockWithoutConstructor(MockSubject::class, [
-            'greeting' => static fn (): string => 'stubbed',
-            'value'    => 7,
-        ]);
-
-        $this->assertSame('stubbed', $subject->greeting());
-        $this->assertSame(7, $subject->value());
-    }
-
-    public function testMockWithConstructorNormalizesCtorArgKeys(): void
-    {
-        $plain = $this->mockWithConstructor(MockSubject::class, ['label' => 'custom']);
-        $this->assertSame('custom', $plain->tag);
-
-        $stubbed = $this->mockWithConstructor(MockSubject::class, ['label' => 'custom'], ['boot' => null]);
-        $this->assertSame('custom', $stubbed->tag);
-        $this->assertFalse($stubbed->booted);
     }
 }

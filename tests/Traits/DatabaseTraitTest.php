@@ -45,15 +45,15 @@ final class DatabaseTraitTest extends TestCase
         parent::tearDown();
     }
 
-    public function testAssertInDatabasePasses(): void
-    {
-        $this->assertInDatabase('users', ['id' => 1]);
-    }
-
     public function testAssertInDatabaseFailsWhenMissing(): void
     {
         $this->expectException(AssertionFailedError::class);
         $this->assertInDatabase('users', ['id' => 999]);
+    }
+
+    public function testAssertInDatabasePasses(): void
+    {
+        $this->assertInDatabase('users', ['id' => 1]);
     }
 
     public function testAssertNotInDatabasePasses(): void
@@ -71,6 +71,17 @@ final class DatabaseTraitTest extends TestCase
         self::resetConnections();
 
         $this->assertInDatabase('seeded_users', ['id' => 1]);
+    }
+
+    public function testGetDriverReturnsCurrentEnvDriver(): void
+    {
+        putenv('driver=pgsql');
+
+        try {
+            $this->assertSame('pgsql', $this->getDriver());
+        } finally {
+            putenv('driver');
+        }
     }
 
     public function testPublicApiVisibility(): void
@@ -101,17 +112,6 @@ final class DatabaseTraitTest extends TestCase
                 (new ReflectionMethod(self::class, $method))->isPublic(),
                 $method
             );
-        }
-    }
-
-    public function testGetDriverReturnsCurrentEnvDriver(): void
-    {
-        putenv('driver=pgsql');
-
-        try {
-            $this->assertSame('pgsql', $this->getDriver());
-        } finally {
-            putenv('driver');
         }
     }
 }

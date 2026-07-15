@@ -18,16 +18,15 @@ use PHPUnit\Framework\TestCase;
 
 final class EnvironmentTest extends TestCase
 {
-    public function testPhalconIsAvailableInTheTestImage(): void
-    {
-        $this->assertTrue(Environment::phalconAvailable());
-    }
-
     public function testExactlyOneProviderReportsTrue(): void
     {
         $this->assertTrue(
             Environment::viaExtension() || Environment::viaImplementation()
         );
+    }
+    public function testPhalconIsAvailableInTheTestImage(): void
+    {
+        $this->assertTrue(Environment::phalconAvailable());
     }
 
     public function testProvidersAreMutuallyExclusive(): void

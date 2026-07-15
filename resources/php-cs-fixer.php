@@ -15,17 +15,50 @@ $finder = PhpCsFixer\Finder::create()
     ->in([__DIR__ . '/../src', __DIR__ . '/../tests']);
 
 return (new PhpCsFixer\Config())
+    ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
+    // declare_strict_types is a risky rule.
     ->setRiskyAllowed(true)
-    ->setRules([
-        '@PSR12'                        => true,
-        'declare_strict_types'          => true,
-        'blank_line_between_import_groups' => true,
-        'ordered_imports'               => [
-            'sort_algorithm' => 'alpha',
-            'imports_order'  => ['class', 'function', 'const'],
-        ],
-        'no_unused_imports'             => true,
-        'array_syntax'                  => ['syntax' => 'short'],
-    ])
-    ->setFinder($finder)
-    ->setCacheFile(__DIR__ . '/../tests/_output/.php-cs-fixer.cache');
+    ->setUsingCache(true)
+    ->setCacheFile(__DIR__ . '/../tests/_output/.php-cs-fixer.cache')
+    ->setRules(
+        [
+            // The two rules below are a local addition on top of the ordering
+            // rules shared with the other Phalcon projects. They are kept here
+            // until the global coding standard is agreed, at which point they
+            // should move into the shared set rather than stay a divergence.
+            // PSR-12 (via phpcs) checks neither, so nothing else enforces them.
+            'declare_strict_types'   => true,
+            'no_unused_imports'      => true,
+            'ordered_imports'        => [
+                'sort_algorithm' => 'alpha',
+                'imports_order'  => ['class', 'function', 'const'],
+            ],
+            'ordered_class_elements' => [
+                'sort_algorithm' => 'alpha',
+                'order'          => [
+                    'use_trait',
+                    'case',
+                    'constant_public',
+                    'constant_protected',
+                    'constant_private',
+                    'property_public_static',
+                    'property_protected_static',
+                    'property_private_static',
+                    'property_public',
+                    'property_protected',
+                    'property_private',
+                    'construct',
+                    'destruct',
+                    'magic',
+                    'phpunit',
+                    'method_public_static',
+                    'method_protected_static',
+                    'method_private_static',
+                    'method_public',
+                    'method_protected',
+                    'method_private',
+                ],
+            ],
+        ]
+    )
+    ->setFinder($finder);

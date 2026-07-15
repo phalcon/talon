@@ -168,10 +168,74 @@ final class Settings implements SettingsContract
             [
                 'dump_file'       => $env('dump_file'),
                 'initial_queries' => $env('initial_queries'),
+                'rest_url'        => $env('TALON_REST_URL', 'http://127.0.0.1:8080'),
             ],
             [],
             $services,
         );
+    }
+
+    private static function discoverRoot(): string
+    {
+        $start   = getcwd() ?: '.';
+        $current = $start;
+
+        while (true) {
+            if (file_exists($current . '/composer.json')) {
+                return $current;
+            }
+
+            $parent = dirname($current);
+            if ($parent === $current) {
+                return $start;
+            }
+
+            $current = $parent;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     *
+     * @return array<string, mixed>
+     */
+    private static function section(array $config, string $key): array
+    {
+        $value = $config[$key] ?? [];
+        if (!is_array($value)) {
+            return [];
+        }
+
+        /** @var array<string, mixed> $value */
+        return $value;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private static function sectionOfArrays(array $config, string $key): array
+    {
+        $result = [];
+        foreach (self::section($config, $key) as $name => $value) {
+            if (is_array($value)) {
+                /** @var array<string, mixed> $value */
+                $result[(string) $name] = $value;
+            }
+        }
+
+        return $result;
+    }
+
+    public function cachePath(string $relative = ''): string
+    {
+        return $this->dir('cache', 'tests/_output/cache', $relative);
+    }
+
+    public function dataPath(string $relative = ''): string
+    {
+        return $this->dir('data', 'tests/_data', $relative);
     }
 
     public function get(string $key, mixed $default = null): mixed
@@ -222,16 +286,6 @@ final class Settings implements SettingsContract
         return ($this->services[$name] ?? null)?->getOptions() ?? [];
     }
 
-    public function cachePath(string $relative = ''): string
-    {
-        return $this->dir('cache', 'tests/_output/cache', $relative);
-    }
-
-    public function dataPath(string $relative = ''): string
-    {
-        return $this->dir('data', 'tests/_data', $relative);
-    }
-
     public function logsPath(string $relative = ''): string
     {
         return $this->dir('logs', 'tests/_output/logs', $relative);
@@ -275,25 +329,6 @@ final class Settings implements SettingsContract
         return $this->rootPath($sub);
     }
 
-    private static function discoverRoot(): string
-    {
-        $start   = getcwd() ?: '.';
-        $current = $start;
-
-        while (true) {
-            if (file_exists($current . '/composer.json')) {
-                return $current;
-            }
-
-            $parent = dirname($current);
-            if ($parent === $current) {
-                return $start;
-            }
-
-            $current = $parent;
-        }
-    }
-
     /**
      * @param array<string, mixed> $options
      */
@@ -302,39 +337,5 @@ final class Settings implements SettingsContract
         $value = $options[$key] ?? $default;
 
         return is_scalar($value) ? (string) $value : $default;
-    }
-
-    /**
-     * @param array<string, mixed> $config
-     *
-     * @return array<string, mixed>
-     */
-    private static function section(array $config, string $key): array
-    {
-        $value = $config[$key] ?? [];
-        if (!is_array($value)) {
-            return [];
-        }
-
-        /** @var array<string, mixed> $value */
-        return $value;
-    }
-
-    /**
-     * @param array<string, mixed> $config
-     *
-     * @return array<string, array<string, mixed>>
-     */
-    private static function sectionOfArrays(array $config, string $key): array
-    {
-        $result = [];
-        foreach (self::section($config, $key) as $name => $value) {
-            if (is_array($value)) {
-                /** @var array<string, mixed> $value */
-                $result[(string) $name] = $value;
-            }
-        }
-
-        return $result;
     }
 }

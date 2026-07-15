@@ -21,19 +21,6 @@ use Symfony\Component\BrowserKit\Request;
 
 final class BrowserTraitTest extends AbstractBrowserTestCase
 {
-    protected function appFactory(): callable
-    {
-        return static fn () => require __DIR__ . '/../Fakes/Browser/app.php';
-    }
-
-    public function testVisitAndAssertPageText(): void
-    {
-        $this->visitPage('/browser/form');
-
-        $this->assertPageContainsText('Log In');
-        $this->assertPageMissingText('Welcome back');
-    }
-
     public function testAssertBeforeVisitThrows(): void
     {
         $this->expectException(ResponseNotDispatched::class);
@@ -41,41 +28,13 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->assertPageContainsText('anything');
     }
 
-    public function testLoginFlowFollowsRedirectAndKeepsSession(): void
+    public function testAssertPageMissingTextFailsWhenTextIsPresent(): void
     {
-        $this->visitPage('/browser/form');
-        $this->fillField('name', 'sarah');
-        $this->selectOption('active', 'Yes');
-        $this->pressButton('Log In');
+        $this->visitPage('/browser/landed');
 
-        $this->assertPageContainsText('Welcome sarah');
-        $this->assertPageContainsText('active=Yes');
-    }
+        $this->expectException(AssertionFailedError::class);
 
-    public function testSessionPersistsAcrossASecondRequest(): void
-    {
-        $this->visitPage('/browser/form');
-        $this->fillField('name', 'sarah');
-        $this->pressButton('Log In');
-
-        $this->visitPage('/browser/secured');
-        $this->assertPageContainsText('Welcome sarah');
-    }
-
-    public function testSecuredIsGuestInAFreshTest(): void
-    {
-        $this->visitPage('/browser/secured');
-
-        $this->assertPageContainsText('Guest');
-    }
-
-    public function testPressButtonBySelectorSubmitsTheForm(): void
-    {
-        $this->visitPage('/browser/form');
-        $this->fillField('name', 'john');
-        $this->pressButton('//form/*[@type="submit"]');
-
-        $this->assertPageContainsText('Welcome john');
+        $this->assertPageMissingText('landed ok');
     }
 
     public function testClickLinkByText(): void
@@ -94,14 +53,6 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->assertPageContainsText('landed ok');
     }
 
-    public function testPressButtonByLabelWithoutFilling(): void
-    {
-        $this->visitPage('/browser/search');
-        $this->pressButton('Search');
-
-        $this->assertPageContainsText('landed ok');
-    }
-
     public function testCookieJarReadAndWrite(): void
     {
         $this->visitPage('/browser/cookie');
@@ -112,16 +63,31 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->assertPageContainsText('cookie sent=crunchy');
     }
 
-    public function testSetCookieIsClearedWhenTheAppExpiresIt(): void
+    public function testFillFieldWithNoFormThrows(): void
     {
-        // A set cookie is host-scoped, so a response that expires it on the same
-        // host actually evicts it from the jar (an empty-domain cookie would not).
-        $this->setCookie('talon', 'crunchy');
-        $this->assertSame('crunchy', $this->getCookie('talon'));
+        $this->visitPage('/browser/landed');
 
-        $this->visitPage('/browser/cookieClear');
+        $this->expectException(ElementNotFound::class);
 
-        $this->assertNull($this->getCookie('talon'));
+        $this->fillField('name', 'value');
+    }
+
+    public function testGetCookieReturnsNullWhenAbsent(): void
+    {
+        $this->visitPage('/browser/menu');
+
+        $this->assertNull($this->getCookie('nope'));
+    }
+
+    public function testLoginFlowFollowsRedirectAndKeepsSession(): void
+    {
+        $this->visitPage('/browser/form');
+        $this->fillField('name', 'sarah');
+        $this->selectOption('active', 'Yes');
+        $this->pressButton('Log In');
+
+        $this->assertPageContainsText('Welcome sarah');
+        $this->assertPageContainsText('active=Yes');
     }
 
     public function testMissingLinkThrows(): void
@@ -134,53 +100,35 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->clickLink('Nonexistent');
     }
 
-    public function testGetCookieReturnsNullWhenAbsent(): void
-    {
-        $this->visitPage('/browser/menu');
-
-        $this->assertNull($this->getCookie('nope'));
-    }
-
-    public function testPressButtonWithNoFormThrows(): void
-    {
-        $this->visitPage('/browser/landed');
-
-        $this->expectException(ElementNotFound::class);
-        $this->expectExceptionMessage('Could not find button "Save" on the page');
-
-        $this->pressButton('Save');
-    }
-
-    public function testPressButtonByXPathWithoutFilling(): void
+    public function testPressButtonByLabelWithoutFilling(): void
     {
         $this->visitPage('/browser/search');
-        $this->pressButton('//button');
+        $this->pressButton('Search');
 
         $this->assertPageContainsText('landed ok');
-    }
-
-    public function testFillFieldWithNoFormThrows(): void
-    {
-        $this->visitPage('/browser/landed');
-
-        $this->expectException(ElementNotFound::class);
-
-        $this->fillField('name', 'value');
-    }
-
-    public function testAssertPageMissingTextFailsWhenTextIsPresent(): void
-    {
-        $this->visitPage('/browser/landed');
-
-        $this->expectException(AssertionFailedError::class);
-
-        $this->assertPageMissingText('landed ok');
     }
 
     public function testPressButtonByParenthesizedXPath(): void
     {
         $this->visitPage('/browser/search');
         $this->pressButton('(//button)[1]');
+
+        $this->assertPageContainsText('landed ok');
+    }
+
+    public function testPressButtonBySelectorSubmitsTheForm(): void
+    {
+        $this->visitPage('/browser/form');
+        $this->fillField('name', 'john');
+        $this->pressButton('//form/*[@type="submit"]');
+
+        $this->assertPageContainsText('Welcome john');
+    }
+
+    public function testPressButtonByXPathWithoutFilling(): void
+    {
+        $this->visitPage('/browser/search');
+        $this->pressButton('//button');
 
         $this->assertPageContainsText('landed ok');
     }
@@ -196,6 +144,16 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->pressButton('button');
     }
 
+    public function testPressButtonWithNoFormThrows(): void
+    {
+        $this->visitPage('/browser/landed');
+
+        $this->expectException(ElementNotFound::class);
+        $this->expectExceptionMessage('Could not find button "Save" on the page');
+
+        $this->pressButton('Save');
+    }
+
     public function testPressButtonWithUnmatchedXPathThrows(): void
     {
         $this->visitPage('/browser/search');
@@ -203,6 +161,43 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->expectException(ElementNotFound::class);
 
         $this->pressButton('//form/input[@type="submit"]');
+    }
+
+    public function testSecuredIsGuestInAFreshTest(): void
+    {
+        $this->visitPage('/browser/secured');
+
+        $this->assertPageContainsText('Guest');
+    }
+
+    public function testSessionPersistsAcrossASecondRequest(): void
+    {
+        $this->visitPage('/browser/form');
+        $this->fillField('name', 'sarah');
+        $this->pressButton('Log In');
+
+        $this->visitPage('/browser/secured');
+        $this->assertPageContainsText('Welcome sarah');
+    }
+
+    public function testSetCookieIsClearedWhenTheAppExpiresIt(): void
+    {
+        // A set cookie is host-scoped, so a response that expires it on the same
+        // host actually evicts it from the jar (an empty-domain cookie would not).
+        $this->setCookie('talon', 'crunchy');
+        $this->assertSame('crunchy', $this->getCookie('talon'));
+
+        $this->visitPage('/browser/cookieClear');
+
+        $this->assertNull($this->getCookie('talon'));
+    }
+
+    public function testVisitAndAssertPageText(): void
+    {
+        $this->visitPage('/browser/form');
+
+        $this->assertPageContainsText('Log In');
+        $this->assertPageMissingText('Welcome back');
     }
 
     public function testVisitPageAlwaysTargetsLocalhost(): void
@@ -216,5 +211,9 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $request = $this->browser()->getRequest();
         $this->assertInstanceOf(Request::class, $request);
         $this->assertSame('http://localhost/browser/landed', $request->getUri());
+    }
+    protected function appFactory(): callable
+    {
+        return static fn () => require __DIR__ . '/../Fakes/Browser/app.php';
     }
 }

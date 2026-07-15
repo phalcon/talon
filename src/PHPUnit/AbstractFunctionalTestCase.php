@@ -18,6 +18,6 @@ use Phalcon\Talon\Traits\FunctionalTrait;
 
 abstract class AbstractFunctionalTestCase extends AbstractUnitTestCase
 {
-    use FunctionalTrait;
     use FunctionalAssertionsTrait;
+    use FunctionalTrait;
 }

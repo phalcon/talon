@@ -26,69 +26,6 @@ use Symfony\Component\BrowserKit\Exception\LogicException;
 
 final class ClientTest extends TestCase
 {
-    public function testGetRendersContent(): void
-    {
-        $client  = $this->client();
-        $crawler = $client->request('GET', 'http://localhost/browser/form');
-
-        $this->assertStringContainsString('<form', $crawler->html());
-    }
-
-    public function testPostEchoesParameters(): void
-    {
-        $client  = $this->client();
-        $crawler = $client->request('POST', 'http://localhost/browser/echo', ['q' => 'hi']);
-
-        $this->assertStringContainsString('post:hi', $crawler->text());
-    }
-
-    public function testRedirectIsFollowed(): void
-    {
-        $client  = $this->client();
-        $crawler = $client->request('GET', 'http://localhost/browser/bounce');
-
-        $this->assertStringContainsString('landed ok', $crawler->text());
-    }
-
-    public function testSetCookieHeaderLandsInTheJar(): void
-    {
-        $client = $this->client();
-        $client->request('GET', 'http://localhost/browser/cookie');
-
-        $cookie = $client->getCookieJar()->get('baked');
-        $this->assertNotNull($cookie);
-        $this->assertSame('yummy', $cookie->getValue());
-    }
-
-    public function testCookiesServiceCookiesLandInTheJar(): void
-    {
-        $client = $this->client();
-        $client->request('GET', 'http://localhost/browser/cookieService');
-
-        $cookie = $client->getCookieJar()->get('svc');
-        $this->assertNotNull($cookie);
-        $this->assertSame('value', $cookie->getValue());
-    }
-
-    public function testRedirectLoopRaisesInsteadOfRecursing(): void
-    {
-        $client = $this->client();
-
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('maximum number');
-
-        $client->request('GET', 'http://localhost/browser/loop');
-    }
-
-    public function testFactoryWithoutHandleThrows(): void
-    {
-        $client = new Client(static fn () => new stdClass());
-
-        $this->expectException(InvalidApplication::class);
-
-        $client->request('GET', 'http://localhost/');
-    }
-
     public function testAppWithoutGetDiSkipsCookieExtraction(): void
     {
         $client = new Client(static fn () => new FakeAppWithoutGetDi());
@@ -105,21 +42,14 @@ final class ClientTest extends TestCase
         $this->assertSame([], $client->getCookieJar()->all());
     }
 
-    public function testNonCookiesServiceSkipsCookieExtraction(): void
+    public function testCookiesServiceCookiesLandInTheJar(): void
     {
-        $client = new Client(static fn () => new FakeAppWithNonCookiesService());
-        $client->request('GET', 'http://localhost/');
+        $client = $this->client();
+        $client->request('GET', 'http://localhost/browser/cookieService');
 
-        $this->assertSame([], $client->getCookieJar()->all());
-    }
-
-    public function testMalformedCookiesAreSkipped(): void
-    {
-        $client = new Client(static fn () => new FakeAppWithMalformedCookies());
-        $client->request('GET', 'http://localhost/');
-
-        $this->assertNull($client->getCookieJar()->get('malformed'));
-        $this->assertNull($client->getCookieJar()->get('nonScalar'));
+        $cookie = $client->getCookieJar()->get('svc');
+        $this->assertNotNull($cookie);
+        $this->assertSame('value', $cookie->getValue());
     }
 
     public function testCookieVariantsSurviveExtraction(): void
@@ -147,9 +77,42 @@ final class ClientTest extends TestCase
         $this->assertNull($sess->getExpiresTime());
     }
 
+    public function testFactoryWithoutHandleThrows(): void
+    {
+        $client = new Client(static fn () => new stdClass());
+
+        $this->expectException(InvalidApplication::class);
+
+        $client->request('GET', 'http://localhost/');
+    }
+    public function testGetRendersContent(): void
+    {
+        $client  = $this->client();
+        $crawler = $client->request('GET', 'http://localhost/browser/form');
+
+        $this->assertStringContainsString('<form', $crawler->html());
+    }
+
+    public function testMalformedCookiesAreSkipped(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithMalformedCookies());
+        $client->request('GET', 'http://localhost/');
+
+        $this->assertNull($client->getCookieJar()->get('malformed'));
+        $this->assertNull($client->getCookieJar()->get('nonScalar'));
+    }
+
     public function testMaxRedirectsIsCapped(): void
     {
         $this->assertSame(20, $this->client()->getMaxRedirects());
+    }
+
+    public function testNonCookiesServiceSkipsCookieExtraction(): void
+    {
+        $client = new Client(static fn () => new FakeAppWithNonCookiesService());
+        $client->request('GET', 'http://localhost/');
+
+        $this->assertSame([], $client->getCookieJar()->all());
     }
 
     public function testNonDiContainerSkipsCookieExtraction(): void
@@ -160,6 +123,14 @@ final class ClientTest extends TestCase
         $this->assertSame([], $client->getCookieJar()->all());
     }
 
+    public function testPostEchoesParameters(): void
+    {
+        $client  = $this->client();
+        $crawler = $client->request('POST', 'http://localhost/browser/echo', ['q' => 'hi']);
+
+        $this->assertStringContainsString('post:hi', $crawler->text());
+    }
+
     public function testQueryStringReachesTheApp(): void
     {
         $client  = $this->client();
@@ -167,6 +138,24 @@ final class ClientTest extends TestCase
 
         $this->assertStringContainsString('uri=/browser/query?q=needle|', $crawler->text());
         $this->assertStringContainsString('|got=needle', $crawler->text());
+    }
+
+    public function testRedirectIsFollowed(): void
+    {
+        $client  = $this->client();
+        $crawler = $client->request('GET', 'http://localhost/browser/bounce');
+
+        $this->assertStringContainsString('landed ok', $crawler->text());
+    }
+
+    public function testRedirectLoopRaisesInsteadOfRecursing(): void
+    {
+        $client = $this->client();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('maximum number');
+
+        $client->request('GET', 'http://localhost/browser/loop');
     }
 
     public function testRequestWithoutAPathDispatchesTheEmptyPath(): void
@@ -185,6 +174,16 @@ final class ClientTest extends TestCase
         $response = $client->getInternalResponse();
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('text/html; charset=UTF-8', $response->getHeader('Content-Type'));
+    }
+
+    public function testSetCookieHeaderLandsInTheJar(): void
+    {
+        $client = $this->client();
+        $client->request('GET', 'http://localhost/browser/cookie');
+
+        $cookie = $client->getCookieJar()->get('baked');
+        $this->assertNotNull($cookie);
+        $this->assertSame('yummy', $cookie->getValue());
     }
 
     public function testSetCookieHeaderUsesGmtSuffixedExpires(): void

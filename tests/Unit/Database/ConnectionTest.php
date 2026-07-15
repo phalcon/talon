@@ -32,6 +32,20 @@ final class ConnectionTest extends TestCase
         $this->assertSame('john.connor@skynet.dev', $rows[0]['email']);
     }
 
+    public function testInitialQueriesRunAfterConnect(): void
+    {
+        $settings = Settings::fromArray([
+            'root'            => '/app',
+            'db'              => ['sqlite' => ['dbname' => ':memory:']],
+            'initial_queries' => 'CREATE TABLE seeded (id INTEGER);',
+        ]);
+
+        $conn = new Connection($settings, 'sqlite');
+        $conn->execute('INSERT INTO seeded VALUES (1)');
+
+        $this->assertCount(1, $conn->select('seeded'));
+    }
+
     public function testLoadSchemaFromFile(): void
     {
         $conn = $this->sqlite();
@@ -93,20 +107,6 @@ final class ConnectionTest extends TestCase
         $conn->execute("INSERT INTO users VALUES (2, 'a@b.c')");
 
         $this->assertCount(2, $conn->select('users', ['email' => 'a@b.c']));
-    }
-
-    public function testInitialQueriesRunAfterConnect(): void
-    {
-        $settings = Settings::fromArray([
-            'root'            => '/app',
-            'db'              => ['sqlite' => ['dbname' => ':memory:']],
-            'initial_queries' => 'CREATE TABLE seeded (id INTEGER);',
-        ]);
-
-        $conn = new Connection($settings, 'sqlite');
-        $conn->execute('INSERT INTO seeded VALUES (1)');
-
-        $this->assertCount(1, $conn->select('seeded'));
     }
 
     public function testSqliteWalPragmaApplied(): void

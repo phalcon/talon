@@ -17,16 +17,15 @@ use Phalcon\Talon\PHPUnit\AbstractFunctionalTestCase;
 
 final class AbstractFunctionalTestCaseTest extends AbstractFunctionalTestCase
 {
-    protected function appFactory(): callable
-    {
-        return static fn () => require __DIR__ . '/../../Fakes/App/app.php';
-    }
-
     public function testDispatch(): void
     {
         $this->dispatch('/test/hello');
 
         $this->assertController('test');
         $this->assertResponseContentContains('Operator');
+    }
+    protected function appFactory(): callable
+    {
+        return static fn () => require __DIR__ . '/../../Fakes/App/app.php';
     }
 }

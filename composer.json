@@ -8,13 +8,14 @@
         "php": "^8.1",
         "phalcon/cli-options-parser": "^2.0",
         "symfony/browser-kit": "^6.4 || ^7.0",
-        "symfony/dom-crawler": "^6.4 || ^7.0"
+        "symfony/dom-crawler": "^6.4 || ^7.0",
+        "symfony/http-client": "^6.4 || ^7.0",
+        "symfony/mime": "^6.4 || ^7.0"
     },
     "require-dev": {
         "ext-pdo": "*",
         "ext-sqlite3": "*",
         "friendsofphp/php-cs-fixer": "^3",
-        "infection/infection": "^0.29.9",
         "pds/composer-script-names": "^1",
         "pds/skeleton": "^1",
         "phalcon/phalcon": "^6.0@alpha",

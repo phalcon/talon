@@ -24,6 +24,25 @@ final class ResultSetTraitTest extends TestCase
 {
     use ResultSetTrait;
 
+    public function testAcceptsResultsetSubclass(): void
+    {
+        $this->assertInstanceOf(Simple::class, $this->mockResultSet([], Simple::class));
+    }
+
+    public function testEmptyMock(): void
+    {
+        $mock = $this->mockResultSet([]);
+
+        $this->assertCount(0, $mock);
+        $this->assertNull($mock->getFirst());
+    }
+
+    public function testInvalidClassThrows(): void
+    {
+        $this->expectException(InvalidResultsetClass::class);
+        $this->mockResultSet([], self::class);
+    }
+
     public function testMockReportsCountAndFirstLast(): void
     {
         $first  = $this->createMock(ModelInterface::class);
@@ -38,12 +57,15 @@ final class ResultSetTraitTest extends TestCase
         $this->assertSame([$first, $middle, $last], $mock->toArray());
     }
 
-    public function testEmptyMock(): void
+    public function testMockResultSetIsPublic(): void
     {
-        $mock = $this->mockResultSet([]);
+        // The call covers the method body so infection pairs this test
+        // with the visibility mutant; the reflection check observes it.
+        $this->mockResultSet([]);
 
-        $this->assertCount(0, $mock);
-        $this->assertNull($mock->getFirst());
+        $this->assertTrue(
+            (new ReflectionMethod(self::class, 'mockResultSet'))->isPublic()
+        );
     }
 
     public function testMockSupportsIteration(): void
@@ -62,23 +84,6 @@ final class ResultSetTraitTest extends TestCase
         $this->assertFalse($mock->valid());
     }
 
-    public function testInvalidClassThrows(): void
-    {
-        $this->expectException(InvalidResultsetClass::class);
-        $this->mockResultSet([], self::class);
-    }
-
-    public function testMockResultSetIsPublic(): void
-    {
-        // The call covers the method body so infection pairs this test
-        // with the visibility mutant; the reflection check observes it.
-        $this->mockResultSet([]);
-
-        $this->assertTrue(
-            (new ReflectionMethod(self::class, 'mockResultSet'))->isPublic()
-        );
-    }
-
     public function testSeekReadsTheInjectedRows(): void
     {
         $first  = $this->createMock(ModelInterface::class);
@@ -90,10 +95,5 @@ final class ResultSetTraitTest extends TestCase
         $mock->seek(1);
 
         $this->addToAssertionCount(1);
-    }
-
-    public function testAcceptsResultsetSubclass(): void
-    {
-        $this->assertInstanceOf(Simple::class, $this->mockResultSet([], Simple::class));
     }
 }

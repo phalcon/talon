@@ -33,8 +33,6 @@ trait BrowserTrait
 
     private ?Form $form = null;
 
-    abstract protected function appFactory(): callable;
-
     public function clickLink(string $text, ?string $context = null): void
     {
         $crawler = null === $context
@@ -89,6 +87,8 @@ trait BrowserTrait
         $this->browser()->request('GET', 'http://localhost' . $url);
         $this->form = null;
     }
+
+    abstract protected function appFactory(): callable;
 
     protected function browser(): Client
     {
