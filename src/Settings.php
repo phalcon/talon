@@ -168,6 +168,7 @@ final class Settings implements SettingsContract
             [
                 'dump_file'       => $env('dump_file'),
                 'initial_queries' => $env('initial_queries'),
+                'rest_url'        => $env('TALON_REST_URL', 'http://127.0.0.1:8080'),
             ],
             [],
             $services,

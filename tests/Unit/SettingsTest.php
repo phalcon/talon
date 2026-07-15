@@ -289,6 +289,23 @@ final class SettingsTest extends TestCase
         $this->assertSame([], $settings->getServiceOptions('redisCluster')['hosts']);
     }
 
+    public function testFromEnvRestUrlDefault(): void
+    {
+        $settings = Settings::fromEnv(['root' => '/app']);
+
+        $this->assertSame('http://127.0.0.1:8080', $settings->get('rest_url'));
+    }
+
+    public function testFromEnvRestUrlOverride(): void
+    {
+        $settings = Settings::fromEnv([
+            'root'           => '/app',
+            'TALON_REST_URL' => 'http://api.test:9501',
+        ]);
+
+        $this->assertSame('http://api.test:9501', $settings->get('rest_url'));
+    }
+
     public function testFromEnvUsesRootOverride(): void
     {
         $this->assertSame('/app', Settings::fromEnv(['root' => '/app'])->rootPath());
