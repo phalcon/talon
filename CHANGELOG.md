@@ -4,7 +4,15 @@
 
 ### Changed
 
+- Added `symfony/http-client` and `symfony/mime` (both `^6.4 || ^7.0`) as dependencies. `Symfony\Component\BrowserKit\HttpBrowser` needs the first to make real requests and the second to build a request body - browser-kit lists both as `require-dev`, not `require`, so neither is pulled in transitively. Mime is not only for file uploads: `HttpBrowser` raises `You cannot pass non-empty bodies as the Mime component is not installed` for every method other than `GET`/`HEAD`, before it inspects the body at all. On PHP 8.1 Composer resolves the 6.4 LTS line; Symfony 7.x requires PHP 8.2. [#19](https://github.com/phalcon/talon/issues/19)
+
 ### Added
+
+- Added a REST/JSON test surface: `Phalcon\Talon\Traits\RestTrait` (the full verb set, request headers that persist across requests, `amBearerAuthenticated()`/`amHttpAuthenticated()`, redirect control, and response grabbers), `Phalcon\Talon\Traits\RestAssertionsTrait` (status, range, body, header, and JSON assertions), and `Phalcon\Talon\PHPUnit\AbstractRestTestCase` which composes both. Talon's browser surface was HTML-shaped (`clickLink`/`fillField`/`pressButton`) because it was built against `vokuro` and `invo`; a JSON:API application had no counterpart and could not be tested at all. Requests go over real HTTP via `Symfony\Component\BrowserKit\HttpBrowser`, so the application is exercised the way a client exercises it - the in-process `Browser\Client` cannot serve here because it never maps request headers into `$_SERVER`, and a raw JSON body cannot reach `php://input` in-process. `restHttpClient()` is the seam a test overrides with a `MockHttpClient` to drive the same request-building path without a live server. The base URL comes from `TALON_REST_URL` (default `http://127.0.0.1:8080`). [#19](https://github.com/phalcon/talon/issues/19)
+- Added `Phalcon\Talon\Http\HttpCode` - HTTP status constants plus `getDescription()`, which returns the `404 (Not Found)` form. It is deliberately an independent implementation of the standard reason phrases rather than a lookup into the application under test, so that asserting an application's emitted status string against it actually asserts something. [#19](https://github.com/phalcon/talon/issues/19)
+- Added `Phalcon\Talon\Http\JsonType` - validates a decoded JSON document against a map of type expectations (`string`, `integer`, `float`, `boolean`, `array`, `null`, the `:date` filter, `|` unions, and nested maps). Keys absent from the map are ignored, so a map can describe just the part of an envelope a test cares about. Types are strict: an int does not satisfy `float`. [#19](https://github.com/phalcon/talon/issues/19)
+- Added `Phalcon\Talon\Http\JsonSubset` - recursive subset matching, so a fragment can be asserted against a full document. Keys and list elements present in the response but absent from the expectation are ignored, and list elements match in any order. [#19](https://github.com/phalcon/talon/issues/19)
+- Added `TALON_REST_URL` to `Settings::fromEnv()`, readable via `Settings::get('rest_url')` and defaulting to `http://127.0.0.1:8080`. [#19](https://github.com/phalcon/talon/issues/19)
 
 ### Fixed
 
