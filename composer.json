@@ -18,7 +18,7 @@
         "friendsofphp/php-cs-fixer": "^3",
         "pds/composer-script-names": "^1",
         "pds/skeleton": "^1",
-        "phalcon/phalcon": "^6.0@alpha",
+        "phalcon/phalcon": "^6.0@alpha || ^6.0",
         "phpstan/phpstan": "^2",
         "phpunit/phpunit": "^10.5",
         "predis/predis": "^2 || ^3",
