@@ -230,7 +230,7 @@ return [
 ```
 
 Per-suite keys: `config` (required), `php` (extra ini flags), `env` (extra env vars) and
-`args` (default PHPUnit arguments) — suite entries merge over the global `php`/`env`.
+`args` (default PHPUnit arguments) - suite entries merge over the global `php`/`env`.
 Options are forwarded to PHPUnit starting at the first option talon does not recognize
 itself, and everything after `--` is always forwarded verbatim:
 

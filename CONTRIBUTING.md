@@ -20,7 +20,7 @@ docker compose run --rm app composer install
 The image is built from `resources/docker/Dockerfile`. Two build arguments select the
 runtime (both have defaults in `.env`):
 
-- `PHP_VERSION` - `8.1`–`8.5`.
+- `PHP_VERSION` - `8.1`-`8.5`.
 - `PHALCON_VARIANT` - `v5` (the Phalcon C extension) or `v6` (the `phalcon/phalcon` package).
 
 For the **v6** variant, also pull in the PHP implementation after installing:
