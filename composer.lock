@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ba24f1db9c96d7d9f39b5e31f96125be",
+    "content-hash": "c7425d5c8c596f4873d4e2468a1f210a",
     "packages": [
         {
             "name": "masterminds/html5",
@@ -2118,16 +2118,16 @@
         },
         {
             "name": "phalcon/phalcon",
-            "version": "v6.0.0alpha4",
+            "version": "v6.0.0beta1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phalcon/phalcon.git",
-                "reference": "4568057c441baf0a729c3eca7585dcb0c5c97d2f"
+                "reference": "8514b92afe167411077f3175023a38038e52cbf3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phalcon/phalcon/zipball/4568057c441baf0a729c3eca7585dcb0c5c97d2f",
-                "reference": "4568057c441baf0a729c3eca7585dcb0c5c97d2f",
+                "url": "https://api.github.com/repos/phalcon/phalcon/zipball/8514b92afe167411077f3175023a38038e52cbf3",
+                "reference": "8514b92afe167411077f3175023a38038e52cbf3",
                 "shasum": ""
             },
             "require": {
@@ -2148,7 +2148,7 @@
                 "pds/composer-script-names": "^1.0",
                 "pds/skeleton": "^1.0",
                 "phalcon/phql": "1.0.x-dev",
-                "phalcon/talon": "^0.6.0",
+                "phalcon/talon": "^0.8.0",
                 "phalcon/volt": "1.0.x-dev",
                 "phpbench/phpbench": "^1.4",
                 "phpstan/phpstan": "^2.2",
@@ -2185,7 +2185,7 @@
             ],
             "support": {
                 "issues": "https://github.com/phalcon/phalcon/issues",
-                "source": "https://github.com/phalcon/phalcon/tree/v6.0.0alpha4"
+                "source": "https://github.com/phalcon/phalcon/tree/v6.0.0beta1"
             },
             "funding": [
                 {
@@ -2197,7 +2197,7 @@
                     "type": "open_collective"
                 }
             ],
-            "time": "2026-07-13T18:05:01+00:00"
+            "time": "2026-07-24T22:56:22+00:00"
         },
         {
             "name": "phalcon/traits",
