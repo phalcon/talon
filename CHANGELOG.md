@@ -15,10 +15,18 @@
 - `mariadb` test suite, run with `vendor/bin/talon run mariadb`. Backed by `resources/phpunit.mariadb.xml` and `resources/schema/mariadb.sql`. [#26](https://github.com/phalcon/talon/issues/26)
 - `mariadb:11.4` service in `docker-compose.yml`, and the matching service in both CI jobs. [#26](https://github.com/phalcon/talon/issues/26)
 - `phpunit/phpcov` (^9) as a dev dependency, used to merge the per-suite coverage into `tests/_output/coverage.xml`. [#26](https://github.com/phalcon/talon/issues/26)
+- `Phalcon\Talon\Database\Dialect`, an enum resolving a PDO connection to `Mysql`, `Pgsql`, or `Sqlite`, with per-dialect identifier quoting. [#27](https://github.com/phalcon/talon/issues/27)
+- `DatabaseTrait::getDialect()`, returning the connection's `Dialect`. Use it to choose SQL syntax; use `getDriver()` to tell MariaDB from MySQL. [#27](https://github.com/phalcon/talon/issues/27)
 
 ### Fixed
 
+- `Connection::select()` now matches a NULL criterion with `IS NULL` instead of `col = :col`, which matched nothing. `assertNotInDatabase('t', ['x' => null])` previously passed regardless of the data. [#27](https://github.com/phalcon/talon/issues/27)
+- `Connection::select()` now quotes table and column identifiers per dialect, so reserved words such as `order` and `key` work. [#27](https://github.com/phalcon/talon/issues/27)
+- `DATA_POSTGRES_SCHEMA` is now applied to the connection as `SET search_path`. It was previously read into the options and ignored. [#27](https://github.com/phalcon/talon/issues/27)
+
 ### Removed
+
+- `resources/schema/mariadb.sql`, a byte-identical copy of `mysql.sql`. `DatabaseIntegrationTest` now loads the schema named by each suite's `dump_file` rather than deriving the path from the driver name. [#27](https://github.com/phalcon/talon/issues/27)
 
 ## [0.8.0](https://github.com/phalcon/talon/releases/tag/v0.8.0) (2026-07-15)
 
