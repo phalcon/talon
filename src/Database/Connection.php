@@ -86,15 +86,27 @@ final class Connection implements ConnectionContract
      */
     public function select(string $table, array $criteria = []): array
     {
+        $dialect = Dialect::fromPdo($this->getPdo());
+
         $where  = [];
         $params = [];
+        $index  = 0;
 
         foreach ($criteria as $key => $value) {
-            $where[]      = $key . ' = :' . $key;
-            $params[$key] = $value;
+            $column = $dialect->quoteIdentifier((string) $key);
+
+            // `col = :p` never matches NULL in any dialect; bind no parameter.
+            if ($value === null) {
+                $where[] = $column . ' IS NULL';
+                continue;
+            }
+
+            $placeholder          = 'p' . $index++;
+            $where[]              = $column . ' = :' . $placeholder;
+            $params[$placeholder] = $value;
         }
 
-        $sql = 'SELECT * FROM ' . $table;
+        $sql = 'SELECT * FROM ' . $dialect->quoteIdentifier($table);
         if ($where !== []) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
