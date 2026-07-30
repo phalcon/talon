@@ -17,11 +17,12 @@ use Phalcon\Talon\PHPUnit\AbstractDatabaseTestCase;
 use Phalcon\Talon\Settings;
 use Phalcon\Talon\Talon;
 
-use function getenv;
+use function is_string;
 
 /**
- * Driver-agnostic: runs against sqlite, mysql, or pgsql depending on the `driver`
- * env set by the chosen phpunit config.
+ * Driver-agnostic: runs against sqlite, mysql, mariadb, or pgsql depending on the
+ * `driver` env set by the chosen phpunit config. The schema comes from that
+ * config's `dump_file`, so a suite can point at any schema it likes.
  */
 final class DatabaseIntegrationTest extends AbstractDatabaseTestCase
 {
@@ -32,8 +33,12 @@ final class DatabaseIntegrationTest extends AbstractDatabaseTestCase
         Talon::useSettings(Settings::fromEnv());
         self::resetConnections();
 
-        $driver = getenv('driver') ?: 'sqlite';
-        $this->getConnection()->loadSchema($this->getSettings()->rootPath('resources/schema/' . $driver . '.sql'));
+        $dumpFile = $this->getSettings()->get('dump_file');
+        $this->getConnection()->loadSchema(
+            $this->getSettings()->rootPath(
+                is_string($dumpFile) && $dumpFile !== '' ? $dumpFile : 'resources/schema/sqlite.sql'
+            )
+        );
         $this->getConnection()->execute("INSERT INTO users (id, email) VALUES (1, 'john.connor@skynet.dev')");
     }
 

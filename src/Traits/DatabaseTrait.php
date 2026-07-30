@@ -16,6 +16,7 @@ namespace Phalcon\Talon\Traits;
 use Phalcon\Talon\Contracts\Connection as ConnectionContract;
 use Phalcon\Talon\Contracts\Settings;
 use Phalcon\Talon\Database\Connection;
+use Phalcon\Talon\Database\Dialect;
 use Phalcon\Talon\Talon;
 
 use function getenv;
@@ -72,6 +73,11 @@ trait DatabaseTrait
         }
 
         return self::$connections[$driver];
+    }
+
+    public function getDialect(): Dialect
+    {
+        return Dialect::fromPdo($this->getConnection()->getPdo());
     }
 
     public function getDriver(): string
