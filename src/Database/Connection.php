@@ -57,6 +57,16 @@ final class Connection implements ConnectionContract
                 $this->pdo->exec('PRAGMA journal_mode = WAL');
             }
 
+            // Before initial_queries, so those can rely on the search path.
+            if ($this->driver === 'pgsql') {
+                $schema = $options['schema'] ?? '';
+                if (is_string($schema) && $schema !== '') {
+                    $this->pdo->exec(
+                        'SET search_path TO ' . Dialect::Pgsql->quoteIdentifier($schema)
+                    );
+                }
+            }
+
             $initialQueries = $this->settings->get('initial_queries', '');
             if (is_string($initialQueries) && $initialQueries !== '') {
                 $this->pdo->exec($initialQueries);
