@@ -16,7 +16,7 @@
     </source>
     <php>
         <env name="driver" value="mariadb"/>
-        <env name="dump_file" value="resources/schema/mariadb.sql"/>
+        <env name="dump_file" value="resources/schema/mysql.sql"/>
         <env name="initial_queries" value="SET NAMES utf8mb4;"/>
     </php>
 </phpunit>
