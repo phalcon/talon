@@ -3,6 +3,12 @@ name: Phalcon Talon CI
 on: [push, pull_request]
 
 env:
+  DATA_MARIADB_HOST: 127.0.0.1
+  DATA_MARIADB_PORT: 3307
+  DATA_MARIADB_USER: root
+  DATA_MARIADB_PASS: secret
+  DATA_MARIADB_NAME: talon
+  DATA_MARIADB_CHARSET: utf8mb4
   DATA_MYSQL_HOST: 127.0.0.1
   DATA_MYSQL_PORT: 3306
   DATA_MYSQL_USER: root
@@ -39,6 +45,18 @@ jobs:
           - 'v6'
     name: PHP ${{ matrix.php }} / Phalcon ${{ matrix.variant }}
     services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: secret
+          MARIADB_DATABASE: talon
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h localhost -psecret"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
       mysql:
         image: mysql:8.0
         env:
@@ -96,7 +114,7 @@ jobs:
         run: composer test
 
       - name: Database drivers
-        run: php bin/talon run mysql pgsql
+        run: php bin/talon run mysql pgsql mariadb
 
       # Runtime-independent: run once on a single (v5) cell rather than all ten.
       - name: Static analysis, coding standard, layout
@@ -110,6 +128,18 @@ jobs:
     name: Coverage & SonarQube
     runs-on: ubuntu-latest
     services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: secret
+          MARIADB_DATABASE: talon
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h localhost -psecret"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=12
       mysql:
         image: mysql:8.0
         env:
