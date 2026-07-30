@@ -14,6 +14,8 @@ services:
       - .:/srv
     env_file: .env
     depends_on:
+      mariadb:
+        condition: service_healthy
       mysql:
         condition: service_healthy
       pgsql:
@@ -22,6 +24,18 @@ services:
         condition: service_started
       memcached:
         condition: service_started
+
+  mariadb:
+    image: mariadb:11.4
+    container_name: ${PROJECT_PREFIX:-talon}-mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DATA_MARIADB_PASS:-secret}
+      MARIADB_DATABASE: ${DATA_MARIADB_NAME:-talon}
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-p${DATA_MARIADB_PASS:-secret}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   mysql:
     image: mysql:8.0
