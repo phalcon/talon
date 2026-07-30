@@ -188,6 +188,45 @@ final class SettingsTest extends TestCase
         $this->assertSame(['dbname' => '/data/db.sqlite'], $settings->getServiceOptions('sqlite'));
     }
 
+    public function testFromEnvBuildsMariadbServiceOptionsIndependentlyOfMysql(): void
+    {
+        $settings = Settings::fromEnv([
+            'root'                 => '/app',
+            'DATA_MARIADB_HOST'    => 'mariadb-host',
+            'DATA_MARIADB_PORT'    => 3307,
+            'DATA_MARIADB_NAME'    => 'mariadb-db',
+            'DATA_MARIADB_USER'    => 'mariadb-user',
+            'DATA_MARIADB_PASS'    => 'mariadb-pass',
+            'DATA_MARIADB_CHARSET' => 'utf8mb4',
+            'DATA_MYSQL_HOST'      => 'mysql-host',
+            'DATA_MYSQL_PORT'      => 3306,
+            'DATA_MYSQL_NAME'      => 'mysql-db',
+            'DATA_MYSQL_USER'      => 'mysql-user',
+            'DATA_MYSQL_PASS'      => 'mysql-pass',
+            'DATA_MYSQL_CHARSET'   => 'utf8',
+        ]);
+
+        $this->assertSame(
+            [
+                'host'     => 'mariadb-host',
+                'port'     => 3307,
+                'dbname'   => 'mariadb-db',
+                'username' => 'mariadb-user',
+                'password' => 'mariadb-pass',
+                'charset'  => 'utf8mb4',
+            ],
+            $settings->getServiceOptions('mariadb')
+        );
+        $this->assertSame(
+            'mysql:host=mariadb-host;port=3307;dbname=mariadb-db;charset=utf8mb4',
+            $settings->getDatabaseDsn('mariadb')
+        );
+        $this->assertSame(
+            'mysql:host=mysql-host;port=3306;dbname=mysql-db;charset=utf8',
+            $settings->getDatabaseDsn('mysql')
+        );
+    }
+
     public function testFromEnvDiscoversRootFromComposerJson(): void
     {
         // The package ships a composer.json at its root; discovery must find it.
@@ -363,6 +402,31 @@ final class SettingsTest extends TestCase
         $settings = Settings::fromArray(['root' => '/app']);
 
         $this->assertSame([], $settings->getServiceOptions('unknown'));
+    }
+
+    public function testMariadbDsnAndOptions(): void
+    {
+        $settings = Settings::fromArray(
+            [
+                'root' => '/app',
+                'db'   => [
+                    'mariadb' => [
+                        'host'     => '127.0.0.1',
+                        'port'     => 3307,
+                        'dbname'   => 'talon',
+                        'username' => 'root',
+                        'password' => 'secret',
+                        'charset'  => 'utf8mb4',
+                    ]
+                ],
+            ]
+        );
+
+        $this->assertSame(
+            'mysql:host=127.0.0.1;port=3307;dbname=talon;charset=utf8mb4',
+            $settings->getDatabaseDsn('mariadb')
+        );
+        $this->assertSame('root', $settings->getDatabaseOptions('mariadb')['username']);
     }
 
     public function testMysqlDsnAndOptions(): void
