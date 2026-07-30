@@ -105,7 +105,7 @@ final class SuiteMapTest extends TestCase
         $map = new SuiteMap(dirname(__DIR__, 3));
 
         // Discovery order is glob order (alphabetical per directory).
-        $this->assertSame(['mysql', 'pgsql', 'sqlite', 'unit'], array_keys($map->suites()));
+        $this->assertSame(['mariadb', 'mysql', 'pgsql', 'sqlite', 'unit'], array_keys($map->suites()));
         $this->assertSame('unit', $map->defaultSuite());
     }
 

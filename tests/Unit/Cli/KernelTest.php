@@ -75,7 +75,7 @@ final class KernelTest extends TestCase
 
         $this->assertSame(1, $code);
         $this->assertSame(
-            "talon: Unknown suite 'oracle'. Available suites: mysql, pgsql, sqlite, unit" . PHP_EOL,
+            "talon: Unknown suite 'oracle'. Available suites: mariadb, mysql, pgsql, sqlite, unit" . PHP_EOL,
             $this->stream($this->stderr)
         );
     }

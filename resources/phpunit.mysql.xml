@@ -9,6 +9,11 @@
             <directory>../tests/Database</directory>
         </testsuite>
     </testsuites>
+    <source restrictDeprecations="true">
+        <include>
+            <directory suffix=".php">../src</directory>
+        </include>
+    </source>
     <php>
         <env name="driver" value="mysql"/>
         <env name="dump_file" value="resources/schema/mysql.sql"/>

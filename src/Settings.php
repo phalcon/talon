@@ -34,7 +34,7 @@ use function sprintf;
 final class Settings implements SettingsContract
 {
     private const DEFAULT_HOST = '127.0.0.1';
-    private const DRIVERS      = ['mysql', 'pgsql', 'sqlite'];
+    private const DRIVERS      = ['mariadb', 'mysql', 'pgsql', 'sqlite'];
 
     /**
      * @param array<string, mixed>          $extra
@@ -110,6 +110,14 @@ final class Settings implements SettingsContract
         // this list. Each field is [envKey, default, cast] - cast is 'int'
         // or null (string as-is).
         $serviceFields = [
+            'mariadb' => [
+                'host'     => ['DATA_MARIADB_HOST', self::DEFAULT_HOST, null],
+                'port'     => ['DATA_MARIADB_PORT', '3306', 'int'],
+                'dbname'   => ['DATA_MARIADB_NAME', 'talon', null],
+                'username' => ['DATA_MARIADB_USER', 'root', null],
+                'password' => ['DATA_MARIADB_PASS', '', null],
+                'charset'  => ['DATA_MARIADB_CHARSET', 'utf8mb4', null],
+            ],
             'mysql' => [
                 'host'     => ['DATA_MYSQL_HOST', self::DEFAULT_HOST, null],
                 'port'     => ['DATA_MYSQL_PORT', '3306', 'int'],
@@ -248,7 +256,7 @@ final class Settings implements SettingsContract
         $options = $this->getDatabaseOptions($driver);
 
         return match ($driver) {
-            'mysql' => sprintf(
+            'mariadb', 'mysql' => sprintf(
                 'mysql:host=%s;port=%s;dbname=%s;charset=%s',
                 $this->optString($options, 'host'),
                 $this->optString($options, 'port'),

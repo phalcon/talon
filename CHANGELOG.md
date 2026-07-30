@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.9.0](https://github.com/phalcon/talon/releases/tag/v0.9.0) (2026-07-30)
+
+### Changed
+
+- `composer test-coverage` and `test-coverage-html` now run the `unit`, `mariadb`, `mysql`, and `pgsql` suites and merge the results, so coverage reflects every driver instead of the sqlite path alone. [#26](https://github.com/phalcon/talon/issues/26)
+- `composer test-coverage` and `test-coverage-html` now require live MariaDB, MySQL, and PostgreSQL servers. `composer test` is unchanged and still runs without them. [#26](https://github.com/phalcon/talon/issues/26)
+
+### Added
+
+- MariaDB driver. Set `driver=mariadb` and configure `DATA_MARIADB_HOST`, `DATA_MARIADB_PORT`, `DATA_MARIADB_NAME`, `DATA_MARIADB_USER`, `DATA_MARIADB_PASS`, and `DATA_MARIADB_CHARSET`. [#26](https://github.com/phalcon/talon/issues/26)
+- MariaDB and MySQL are configured independently and can point at different servers. [#26](https://github.com/phalcon/talon/issues/26)
+- `getDatabaseDsn('mariadb')` returns a `mysql:`-prefixed DSN, since MariaDB connects through `pdo_mysql`. No new PHP extension is required. [#26](https://github.com/phalcon/talon/issues/26)
+- `mariadb` test suite, run with `vendor/bin/talon run mariadb`. Backed by `resources/phpunit.mariadb.xml` and `resources/schema/mariadb.sql`. [#26](https://github.com/phalcon/talon/issues/26)
+- `mariadb:11.4` service in `docker-compose.yml`, and the matching service in both CI jobs. [#26](https://github.com/phalcon/talon/issues/26)
+- `phpunit/phpcov` (^9) as a dev dependency, used to merge the per-suite coverage into `tests/_output/coverage.xml`. [#26](https://github.com/phalcon/talon/issues/26)
+
+### Fixed
+
+### Removed
+
 ## [0.8.0](https://github.com/phalcon/talon/releases/tag/v0.8.0) (2026-07-15)
 
 ### Changed
