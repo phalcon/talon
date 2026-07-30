@@ -92,7 +92,7 @@ final class UserTest extends AbstractDatabaseTestCase
 }
 ```
 
-The driver comes from the `driver` env (`sqlite`, `mysql`, `pgsql`); credentials come from
+The driver comes from the `driver` env (`sqlite`, `mysql`, `mariadb`, `pgsql`); credentials come from
 `Settings` (env vars by default - see `resources/.env.example`).
 
 ## Functional tests
@@ -220,10 +220,11 @@ at the project root:
 return [
     'php'     => ['extension=ext/modules/phalcon.so'],   // global ini flags, optional
     'suites'  => [
-        'unit'   => ['config' => 'resources/phpunit.xml.dist'],
-        'mysql'  => ['config' => 'resources/phpunit.mysql.xml'],
-        'pgsql'  => ['config' => 'resources/phpunit.pgsql.xml'],
-        'sqlite' => ['config' => 'resources/phpunit.sqlite.xml'],
+        'unit'    => ['config' => 'resources/phpunit.xml.dist'],
+        'mariadb' => ['config' => 'resources/phpunit.mariadb.xml'],
+        'mysql'   => ['config' => 'resources/phpunit.mysql.xml'],
+        'pgsql'   => ['config' => 'resources/phpunit.pgsql.xml'],
+        'sqlite'  => ['config' => 'resources/phpunit.sqlite.xml'],
     ],
     'default' => 'unit',
 ];
