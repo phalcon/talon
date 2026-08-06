@@ -16,6 +16,6 @@
     </source>
     <php>
         <env name="driver" value="pgsql"/>
-        <env name="dump_file" value="resources/schema/pgsql.sql"/>
+        <env name="dump_file" value="resources/schema/pgsql"/>
     </php>
 </phpunit>

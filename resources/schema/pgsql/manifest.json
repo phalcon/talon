@@ -1,0 +1,10 @@
+{
+    "dialect": "pgsql",
+    "tables": [
+        {
+            "table": "users",
+            "file": "users.sql",
+            "dependencies": []
+        }
+    ]
+}

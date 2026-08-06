@@ -16,7 +16,7 @@
     </source>
     <php>
         <env name="driver" value="mysql"/>
-        <env name="dump_file" value="resources/schema/mysql.sql"/>
+        <env name="dump_file" value="resources/schema/mysql"/>
         <env name="initial_queries" value="SET NAMES utf8mb4;"/>
     </php>
 </phpunit>

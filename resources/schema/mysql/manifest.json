@@ -1,0 +1,10 @@
+{
+    "dialect": "mysql",
+    "tables": [
+        {
+            "table": "users",
+            "file": "users.sql",
+            "dependencies": []
+        }
+    ]
+}

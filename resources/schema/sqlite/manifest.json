@@ -1,0 +1,10 @@
+{
+    "dialect": "sqlite",
+    "tables": [
+        {
+            "table": "users",
+            "file": "users.sql",
+            "dependencies": []
+        }
+    ]
+}
