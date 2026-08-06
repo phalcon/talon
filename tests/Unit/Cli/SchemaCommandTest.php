@@ -19,9 +19,11 @@ use Phalcon\Talon\Settings;
 use PHPUnit\Framework\TestCase;
 
 use function dirname;
-use function file_exists;
 use function file_get_contents;
 use function fopen;
+use function glob;
+use function is_dir;
+use function rmdir;
 use function unlink;
 
 final class SchemaCommandTest extends TestCase
@@ -38,10 +40,25 @@ final class SchemaCommandTest extends TestCase
     protected function tearDown(): void
     {
         foreach (['mysql', 'pgsql', 'sqlite'] as $driver) {
-            $file = $this->output . '/' . $driver . '.sql';
-            if (file_exists($file)) {
+            $directory = $this->output . '/' . $driver;
+            foreach (glob($directory . '/*') ?: [] as $file) {
                 unlink($file);
             }
+
+            if (is_dir($directory)) {
+                rmdir($directory);
+            }
+        }
+
+        // Any stray file at the top level - a dump left by an earlier format,
+        // say - would make rmdir() warn, and failOnWarning turns that into a
+        // failure with nothing to do with what the test asserted.
+        foreach (glob($this->output . '/*.sql') ?: [] as $file) {
+            unlink($file);
+        }
+
+        if (is_dir($this->output)) {
+            rmdir($this->output);
         }
 
         parent::tearDown();
@@ -58,13 +75,13 @@ final class SchemaCommandTest extends TestCase
     {
         $this->assertSame(0, $this->command()->execute());
 
-        $this->assertFileExists($this->output . '/mysql.sql');
-        $this->assertFileExists($this->output . '/pgsql.sql');
-        $this->assertFileExists($this->output . '/sqlite.sql');
+        $this->assertFileExists($this->output . '/mysql/manifest.json');
+        $this->assertFileExists($this->output . '/pgsql/manifest.json');
+        $this->assertFileExists($this->output . '/sqlite/manifest.json');
 
         $this->assertStringContainsString(
             'DROP TABLE IF EXISTS `widgets`;',
-            (string) file_get_contents($this->output . '/mysql.sql')
+            (string) file_get_contents($this->output . '/mysql/widgets.sql')
         );
     }
 
@@ -72,8 +89,8 @@ final class SchemaCommandTest extends TestCase
     {
         $this->assertSame(0, $this->command()->execute(['sqlite']));
 
-        $this->assertFileExists($this->output . '/sqlite.sql');
-        $this->assertFileDoesNotExist($this->output . '/mysql.sql');
+        $this->assertFileExists($this->output . '/sqlite/manifest.json');
+        $this->assertDirectoryDoesNotExist($this->output . '/mysql');
     }
 
     private function command(): SchemaCommand

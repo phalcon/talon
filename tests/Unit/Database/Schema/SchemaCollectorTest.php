@@ -34,7 +34,7 @@ final class SchemaCollectorTest extends TestCase
             $this->collector()->definitions()
         );
 
-        $this->assertSame(['albums', 'widgets'], $tables);
+        $this->assertSame(['albums', 'widgets', 'zones'], $tables);
     }
 
     public function testMissingPreClassThrows(): void
