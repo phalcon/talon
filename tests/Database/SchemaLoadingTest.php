@@ -13,10 +13,10 @@ declare(strict_types=1);
 
 namespace Phalcon\Talon\Tests\Database;
 
+use Phalcon\Talon\Database\Schema\AbstractSchema;
 use Phalcon\Talon\PHPUnit\AbstractDatabaseTestCase;
 use Phalcon\Talon\Settings;
 use Phalcon\Talon\Talon;
-use Phalcon\Talon\Tests\Database\Fixtures\AbstractDriverSchema;
 
 use function file_put_contents;
 use function implode;
@@ -51,11 +51,14 @@ final class SchemaLoadingTest extends AbstractDatabaseTestCase
 
     public function testLoadSchemaExecutesEveryStatement(): void
     {
-        $fixture = new class extends AbstractDriverSchema {
-            protected function sqlMysql(): array
+        // Creation statements only - the drop is the fixture's own run-time
+        // half, exactly as the generator prepends one for a real dump.
+        $fixture = new class ($this->getConnection()->getPdo(), false) extends AbstractSchema {
+            protected string $table = 'widgets';
+
+            protected function getStatementsMysql(): array
             {
                 return [
-                    'DROP TABLE IF EXISTS widgets;',
                     'CREATE TABLE widgets (id INT PRIMARY KEY, label VARCHAR(64)) '
                     . 'DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;',
                     "INSERT INTO widgets VALUES (1, 'first');",
@@ -63,20 +66,18 @@ final class SchemaLoadingTest extends AbstractDatabaseTestCase
                 ];
             }
 
-            protected function sqlPgsql(): array
+            protected function getStatementsPgsql(): array
             {
                 return [
-                    'DROP TABLE IF EXISTS widgets;',
                     'CREATE TABLE widgets (id INTEGER PRIMARY KEY, label VARCHAR(64));',
                     "INSERT INTO widgets VALUES (1, 'first');",
                     "INSERT INTO widgets VALUES (2, 'second');",
                 ];
             }
 
-            protected function sqlSqlite(): array
+            protected function getStatementsSqlite(): array
             {
                 return [
-                    'DROP TABLE IF EXISTS widgets;',
                     'CREATE TABLE widgets (id INTEGER PRIMARY KEY, label TEXT);',
                     "INSERT INTO widgets VALUES (1, 'first');",
                     "INSERT INTO widgets VALUES (2, 'second');",
@@ -84,7 +85,12 @@ final class SchemaLoadingTest extends AbstractDatabaseTestCase
             }
         };
 
-        file_put_contents($this->dumpFile, implode("\n", $fixture->sqlFor($this->getDialect())));
+        $fixture->drop();
+
+        file_put_contents(
+            $this->dumpFile,
+            implode("\n", $fixture->getStatements($this->getDialect()))
+        );
 
         $this->getConnection()->loadSchema($this->dumpFile);
 
