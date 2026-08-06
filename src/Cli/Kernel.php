@@ -15,8 +15,10 @@ namespace Phalcon\Talon\Cli;
 
 use Composer\InstalledVersions;
 use Phalcon\Talon\Cli\Command\RunCommand;
+use Phalcon\Talon\Cli\Command\SchemaCommand;
 use Phalcon\Talon\Cli\Command\SuitesCommand;
 use Phalcon\Talon\Exceptions\Exception;
+use Phalcon\Talon\Talon;
 
 use function fwrite;
 
@@ -66,6 +68,8 @@ final class Kernel
             return match ($command) {
                 'run'    => (new RunCommand(SuiteMap::locate(), new ProcessRunner(), $this->stdout))
                     ->execute($input),
+                'schema' => (new SchemaCommand(Talon::settings(), $this->stdout))
+                    ->execute($input->arguments()),
                 'suites' => (new SuitesCommand(SuiteMap::locate(), $this->stdout))->execute(),
                 default  => $this->unknownCommand($command),
             };
@@ -90,6 +94,7 @@ final class Kernel
 
             Usage:
               talon run [suites...] [-- passthrough]   Run mapped PHPUnit suite(s)
+              talon schema [drivers...]                Generate SQL schema dumps
               talon suites                             List mapped suites
               talon --help | --version
 

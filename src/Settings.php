@@ -174,9 +174,14 @@ final class Settings implements SettingsContract
         return new self(
             $root,
             [
-                'dump_file'       => $env('dump_file'),
-                'initial_queries' => $env('initial_queries'),
-                'rest_url'        => $env('TALON_REST_URL', 'http://127.0.0.1:8080'),
+                'dump_file'        => $env('dump_file'),
+                'initial_queries'  => $env('initial_queries'),
+                'rest_url'         => $env('TALON_REST_URL', 'http://127.0.0.1:8080'),
+                'schema_namespace' => $env('schema_namespace'),
+                'schema_output'    => $env('schema_output'),
+                'schema_post'      => $env('schema_post'),
+                'schema_pre'       => $env('schema_pre'),
+                'schema_source'    => $env('schema_source'),
             ],
             [],
             $services,
