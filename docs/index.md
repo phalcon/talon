@@ -497,6 +497,10 @@ forgotten. There is no `mariadb` method: MariaDB uses the MySQL dialect.
   the table carries a foreign key.
 - **`insert()` is yours.** The contract covers the lifecycle - `create()`, `drop()`,
   `clear()` - never the data shape, so each fixture types its own insert signature.
+- **One fixture, one table.** The table name is the artifact file name and the manifest
+  key, so two fixtures declaring the same table throw `SchemaTableDuplicate`. A fixture
+  whose statements create a second table gets no generated `DROP` for it - write that drop
+  yourself, or split the fixture in two.
 
 Two interfaces split the two lifetimes a fixture has. `AbstractSchema` implements both:
 
@@ -651,6 +655,7 @@ try {
 | `SchemaManifestNotFound` | a schema directory has no `manifest.json` |
 | `SchemaManifestNotLoaded` | `addTable()` is called before any manifest was loaded |
 | `SchemaTableNotFound` | `addTable()` names a table absent from the loaded manifest |
+| `SchemaTableDuplicate` | two schema fixtures declare the same table for one dialect |
 | `SchemaDependencyMissing` | `addTable()` runs before one of the table's dependencies exists |
 | `InvalidApplication` | `appFactory()` returns something without `handle()` |
 | `ResponseNotDispatched` | a response/dispatch assertion runs before `dispatch()` |
