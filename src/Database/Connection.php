@@ -16,21 +16,46 @@ namespace Phalcon\Talon\Database;
 use PDO;
 use Phalcon\Talon\Contracts\Connection as ConnectionContract;
 use Phalcon\Talon\Contracts\Settings;
+use Phalcon\Talon\Database\Schema\SchemaManifest;
+use Phalcon\Talon\Exceptions\SchemaDependencyMissing;
 use Phalcon\Talon\Exceptions\SchemaFileNotFound;
+use Phalcon\Talon\Exceptions\SchemaManifestNotLoaded;
 
+use function count;
+use function end;
+use function explode;
 use function file_exists;
 use function file_get_contents;
 use function implode;
+use function is_dir;
 use function is_string;
 
 final class Connection implements ConnectionContract
 {
+    private ?SchemaManifest $manifest = null;
+
     private ?PDO $pdo = null;
 
     public function __construct(
         private Settings $settings,
         private string $driver
     ) {
+    }
+
+    public function addTable(string $table): void
+    {
+        $manifest = $this->manifest ?? throw new SchemaManifestNotLoaded($table);
+
+        // Dependencies are verified, never resolved. The bulk load runs with
+        // _preSchema live; a standalone add does not, so an unsatisfied FK
+        // fails in a dialect-specific way that points nowhere near the caller.
+        foreach ($manifest->getDependencies($table) as $dependency) {
+            if (!$this->tableExists($dependency)) {
+                throw new SchemaDependencyMissing($table, $dependency);
+            }
+        }
+
+        $this->executeFile($manifest->getFile($table));
     }
 
     public function execute(string $sql): void
@@ -78,15 +103,21 @@ final class Connection implements ConnectionContract
 
     public function loadSchema(string $dumpFile): void
     {
-        if (!file_exists($dumpFile)) {
-            throw new SchemaFileNotFound($dumpFile);
+        if (is_dir($dumpFile)) {
+            $manifest = SchemaManifest::fromDirectory($dumpFile);
+
+            $this->executeFile($manifest->getPreSchemaFile());
+            foreach ($manifest->getTables() as $table) {
+                $this->executeFile($manifest->getFile($table));
+            }
+            $this->executeFile($manifest->getPostSchemaFile());
+
+            $this->manifest = $manifest;
+
+            return;
         }
 
-        $sql = (string) file_get_contents($dumpFile);
-
-        foreach (StatementSplitter::split($sql) as $statement) {
-            $this->getPdo()->exec($statement);
-        }
+        $this->executeFile($dumpFile);
     }
 
     /**
@@ -128,5 +159,49 @@ final class Connection implements ConnectionContract
         $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 
         return $rows;
+    }
+
+    public function tableExists(string $table): bool
+    {
+        $dialect  = Dialect::fromPdo($this->getPdo());
+        $segments = explode('.', $table);
+        $name     = (string) end($segments);
+        $schema   = count($segments) > 1 ? $segments[0] : null;
+
+        [$sql, $params] = match ($dialect) {
+            Dialect::Mysql => [
+                'SELECT COUNT(*) FROM information_schema.TABLES '
+                . 'WHERE TABLE_SCHEMA = IFNULL(:schema, DATABASE()) AND TABLE_NAME = :name',
+                [':schema' => $schema, ':name' => $name],
+            ],
+            // to_regclass() resolves search_path for an unqualified name and
+            // parses a quoted qualified one, so one query covers both.
+            Dialect::Pgsql => [
+                'SELECT CASE WHEN to_regclass(:name) IS NULL THEN 0 ELSE 1 END',
+                [':name' => $dialect->quoteIdentifier($table)],
+            ],
+            Dialect::Sqlite => [
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = :name",
+                [':name' => $name],
+            ],
+        };
+
+        $statement = $this->getPdo()->prepare($sql);
+        $statement->execute($params);
+
+        return (int) $statement->fetchColumn() > 0;
+    }
+
+    private function executeFile(string $path): void
+    {
+        if (!file_exists($path)) {
+            throw new SchemaFileNotFound($path);
+        }
+
+        $sql = (string) file_get_contents($path);
+
+        foreach (StatementSplitter::split($sql) as $statement) {
+            $this->getPdo()->exec($statement);
+        }
     }
 }

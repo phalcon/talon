@@ -17,6 +17,8 @@ use PDO;
 
 interface Connection
 {
+    public function addTable(string $table): void;
+
     public function execute(string $sql): void;
 
     public function getPdo(): PDO;
@@ -29,4 +31,6 @@ interface Connection
      * @return array<int, array<string, mixed>>
      */
     public function select(string $table, array $criteria = []): array;
+
+    public function tableExists(string $table): bool;
 }

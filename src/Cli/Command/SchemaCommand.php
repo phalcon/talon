@@ -17,15 +17,12 @@ use Phalcon\Talon\Contracts\Settings;
 use Phalcon\Talon\Database\Dialect;
 use Phalcon\Talon\Database\Schema\SchemaCollector;
 use Phalcon\Talon\Database\Schema\SchemaGenerator;
+use Phalcon\Talon\Database\Schema\SchemaWriter;
 use Phalcon\Talon\Exceptions\UnknownDriver;
 
-use function file_put_contents;
 use function fwrite;
-use function is_dir;
 use function is_string;
-use function mkdir;
 
-use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
 use const STDOUT;
 
@@ -57,18 +54,11 @@ final class SchemaCommand
             $this->setting('schema_post'),
         );
 
-        $generator = new SchemaGenerator($collector);
-        $output    = $this->settings->rootPath($this->setting('schema_output'));
-
-        if (!is_dir($output)) {
-            mkdir($output, 0777, true);
-        }
+        $writer = new SchemaWriter($collector, new SchemaGenerator($collector));
+        $output = $this->settings->rootPath($this->setting('schema_output'));
 
         foreach ($dialects as $dialect) {
-            $path = $output . DIRECTORY_SEPARATOR . $dialect->value . '.sql';
-            file_put_contents($path, $generator->generate($dialect));
-
-            fwrite($this->stdout, 'Wrote ' . $path . PHP_EOL);
+            fwrite($this->stdout, 'Wrote ' . $writer->write($dialect, $output) . PHP_EOL);
         }
 
         return 0;

@@ -15,13 +15,16 @@ namespace Phalcon\Talon\Database\Schema;
 
 use Phalcon\Talon\Database\Dialect;
 
+use function array_filter;
+use function array_values;
 use function implode;
 use function str_ends_with;
 use function trim;
 
 /**
- * Renders one dialect's dump: pre-schema, then every table as its own DROP
- * followed by its creation statements, then post-schema.
+ * Renders one dialect's schema as text, either whole or one part at a time:
+ * pre-schema, then every table as its own DROP followed by its creation
+ * statements, then post-schema.
  */
 final class SchemaGenerator
 {
@@ -31,40 +34,69 @@ final class SchemaGenerator
 
     public function generate(Dialect $dialect): string
     {
-        $statements = [];
-
-        $pre = $this->collector->preSchema();
-        if ($pre !== null) {
-            foreach ($pre->getStatements($dialect) as $statement) {
-                $statements[] = $this->terminate($statement);
-            }
-        }
+        $parts = [$this->preSchema($dialect)];
 
         foreach ($this->collector->definitions() as $definition) {
-            $own = $definition->getStatements($dialect);
-
-            // No statements means this table does not exist in this dialect,
-            // so it gets no DROP either.
-            if ($own === []) {
-                continue;
-            }
-
-            $statements[] = 'DROP TABLE IF EXISTS '
-                . $dialect->quoteIdentifier($definition->getTable()) . ';';
-
-            foreach ($own as $statement) {
-                $statements[] = $this->terminate($statement);
-            }
+            $parts[] = $this->table($definition, $dialect);
         }
 
+        $parts[] = $this->postSchema($dialect);
+
+        return implode(
+            "\n",
+            array_values(array_filter($parts, static fn (string $part): bool => $part !== ''))
+        );
+    }
+
+    public function postSchema(Dialect $dialect): string
+    {
         $post = $this->collector->postSchema();
-        if ($post !== null) {
-            foreach ($post->getStatements($dialect) as $statement) {
-                $statements[] = $this->terminate($statement);
-            }
+
+        return $post === null ? '' : $this->render($post->getStatements($dialect));
+    }
+
+    public function preSchema(Dialect $dialect): string
+    {
+        $pre = $this->collector->preSchema();
+
+        return $pre === null ? '' : $this->render($pre->getStatements($dialect));
+    }
+
+    /**
+     * The DROP is the generator's, not the definition's - it already knows the
+     * table name and is the only consumer that needs idempotency. An empty
+     * statement list means the table is absent from this dialect, so it gets
+     * no DROP either.
+     */
+    public function table(SchemaDefinition $definition, Dialect $dialect): string
+    {
+        $own = $definition->getStatements($dialect);
+
+        if ($own === []) {
+            return '';
         }
 
-        return implode("\n\n", $statements) . "\n";
+        return $this->render([
+            'DROP TABLE IF EXISTS ' . $dialect->quoteIdentifier($definition->getTable()) . ';',
+            ...$own,
+        ]);
+    }
+
+    /**
+     * @param list<string> $statements
+     */
+    private function render(array $statements): string
+    {
+        if ($statements === []) {
+            return '';
+        }
+
+        $terminated = [];
+        foreach ($statements as $statement) {
+            $terminated[] = $this->terminate($statement);
+        }
+
+        return implode("\n\n", $terminated) . "\n";
     }
 
     private function terminate(string $statement): string
