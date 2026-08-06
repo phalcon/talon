@@ -15,18 +15,14 @@
 [![OpenCollective Backers][oc-backers-badge]][oc-backers-link]
 [![OpenCollective Sponsors][oc-sponsors-badge]][oc-sponsors-link]
 
-Test harness and Phalcon bootstrapping for PHPUnit and beyond - the part of Phalcon that
-catches the bugs.
+Test harness and Phalcon bootstrapping for PHPUnit and beyond - the part of Phalcon that catches the bugs.
 
-Talon provides framework-neutral **traits** (the core), ready-to-extend **PHPUnit base
-classes**, and a one-liner **bootstrap** so any Phalcon project can write unit, integration,
-and functional tests with minimal boilerplate.
+Talon provides framework-neutral **traits** (the core), ready-to-extend **PHPUnit base classes**, and a one-liner **bootstrap** so any Phalcon project can write unit, integration, and functional tests with minimal boilerplate.
 
 ## Requirements
 
 - PHP `^8.1`
-- Phalcon - either the `ext-phalcon` C extension (`^5`) **or** the `phalcon/phalcon` PHP
-  implementation (`^6`). Talon detects whichever is present.
+- Phalcon - either the `ext-phalcon` C extension (`^5`) **or** the `phalcon/phalcon` PHP implementation (`^6`). Talon detects whichever is present.
 
 ## Install
 
@@ -73,10 +69,7 @@ final class CalculatorTest extends AbstractUnitTestCase
 }
 ```
 
-`AbstractUnitTestCase` gives you `callProtectedMethod()`, `getProtectedProperty()`,
-`setProtectedProperty()`, `invokeMethod()`, `getNewFileName()`, `safeDeleteFile()`,
-`safeDeleteDirectory()`, `assertFileContentsContains()`, `checkExtensionIsLoaded()`, and
-`checkPhalconAvailable()`.
+`AbstractUnitTestCase` gives you `callProtectedMethod()`, `getProtectedProperty()`, `setProtectedProperty()`, `invokeMethod()`, `getNewFileName()`, `safeDeleteFile()`, `safeDeleteDirectory()`, `assertFileContentsContains()`, `checkExtensionIsLoaded()`, and `checkPhalconAvailable()`.
 
 ## Database tests
 
@@ -92,8 +85,96 @@ final class UserTest extends AbstractDatabaseTestCase
 }
 ```
 
-The driver comes from the `driver` env (`sqlite`, `mysql`, `mariadb`, `pgsql`); credentials come from
-`Settings` (env vars by default - see `resources/.env.example`).
+The driver comes from the `driver` env (`sqlite`, `mysql`, `mariadb`, `pgsql`); credentials come from `Settings` (env vars by default - see `resources/.env.example`).
+
+## Schema fixtures
+
+A schema fixture declares one table's DDL per dialect. Talon generates the SQL dumps from them; your tests use the same classes to truncate and populate.
+
+```php
+use Phalcon\Talon\Database\Schema\AbstractSchema;
+
+final class WidgetSchema extends AbstractSchema
+{
+    protected string $table = 'widgets';
+
+    public function insert(int $id, string $label): int
+    {
+        return $this->execute(
+            'INSERT INTO widgets (id, label) VALUES (:id, :label)',
+            [':id' => $id, ':label' => $label]
+        );
+    }
+
+    protected function getStatementsMysql(): array
+    {
+        return ['CREATE TABLE widgets (id INT PRIMARY KEY, label VARCHAR(64));'];
+    }
+
+    protected function getStatementsPgsql(): array
+    {
+        return ['CREATE TABLE widgets (id INTEGER PRIMARY KEY, label VARCHAR(64));'];
+    }
+
+    protected function getStatementsSqlite(): array
+    {
+        return ['CREATE TABLE widgets (id INTEGER PRIMARY KEY, label TEXT);'];
+    }
+}
+```
+
+The three per-dialect methods are abstract on purpose - a new dialect cannot be silently forgotten. There is no `mariadb` method: MariaDB uses the MySQL dialect.
+
+- **Creation statements only.** Do not write a `DROP TABLE` yourself; the generator prepends one from the table name.
+- **An empty list means the table does not exist in that dialect.** It is skipped entirely, drop included, and gets no manifest entry.
+- **`getDependencies()`** returns the table names that must exist first. Override it when the table carries a foreign key.
+- **`insert()` is yours.** The contract covers the lifecycle - `create()`, `drop()`, `clear()` - never the data shape, so each fixture types its own insert signature.
+
+### Generating the artifacts
+
+```bash
+talon schema             # every dialect
+talon schema mysql       # one dialect
+```
+
+Configure it with these settings (env vars, or keys in `Settings::fromArray()`):
+
+| Setting | Meaning |
+|---|---|
+| `schema_source` | Directory holding the fixture classes, relative to the project root |
+| `schema_namespace` | Namespace prefix for those classes |
+| `schema_output` | Directory the artifacts are written to, relative to the project root |
+| `schema_pre` | FQCN run before every table - session setup, namespace creation |
+| `schema_post` | FQCN run after every table - closes whatever `schema_pre` opened |
+
+Each dialect gets its own directory:
+
+```
+schema/mysql/_preSchema.sql     always written, even when empty
+schema/mysql/users.sql          one file per table: its DROP, then its creation statements
+schema/mysql/manifest.json      load order, dependencies, per-dialect presence
+schema/mysql/_postSchema.sql    always written, even when empty
+```
+
+The manifest is generated, never hand-edited - if it is wrong, fix a fixture class and regenerate.
+
+Point `dump_file` at the dialect directory and `AbstractDatabaseTestCase` loads it on the first connection: pre-schema, the manifest's tables in order, then post-schema.
+
+```xml
+<env name="dump_file" value="resources/schema/mysql"/>
+```
+
+`loadSchema()` also still accepts a single flat `.sql` file, so a project can migrate to the directory format on its own schedule.
+
+### Rebuilding one table
+
+Loading the whole schema once and truncating stays the default - fast, ordered, dependency-safe. `addTable()` is the escape hatch for a test that needs one table rebuilt:
+
+```php
+$this->addTable('users');
+```
+
+It is standalone only, and enforced: a table's declared dependencies must already exist, or it throws `SchemaDependencyMissing` naming the missing one. Call it once per table, dependency first. The strictness is deliberate - `schema_pre` is live only during the bulk load, so a table with foreign keys that loads fine in bulk can fail standalone on MySQL for reasons nothing at the call site suggests.
 
 ## Functional tests
 
@@ -120,9 +201,7 @@ final class HomeTest extends AbstractFunctionalTestCase
 
 ## Browser tests
 
-For multi-request flows - login, forms, redirects - `AbstractBrowserTestCase` drives your
-app **in-process** (no web server) through a `symfony/browser-kit` bridge, keeping cookies
-and the session across requests:
+For multi-request flows - login, forms, redirects - `AbstractBrowserTestCase` drives your app **in-process** (no web server) through a `symfony/browser-kit` bridge, keeping cookies and the session across requests:
 
 ```php
 use Phalcon\Talon\PHPUnit\AbstractBrowserTestCase;
@@ -146,9 +225,7 @@ final class LoginTest extends AbstractBrowserTestCase
 }
 ```
 
-Verbs: `visitPage`, `fillField`, `selectOption`, `clickLink`, `pressButton`,
-`getCookie`/`setCookie`; assertions: `assertPageContainsText` / `assertPageMissingText`.
-Redirects are followed automatically. Needs `symfony/browser-kit` + `symfony/dom-crawler`.
+Verbs: `visitPage`, `fillField`, `selectOption`, `clickLink`, `pressButton`, `getCookie`/`setCookie`; assertions: `assertPageContainsText` / `assertPageMissingText`. Redirects are followed automatically. Needs `symfony/browser-kit` + `symfony/dom-crawler`.
 
 ## Service tests (Redis / Memcached)
 
@@ -186,8 +263,7 @@ final class ReportTest extends \PHPUnit\Framework\TestCase
 
 ## Custom configuration
 
-Override `getSettings()` in a project base class, or pass `Settings::fromArray([...])` to
-`Talon::boot()`:
+Override `getSettings()` in a project base class, or pass `Settings::fromArray([...])` to `Talon::boot()`:
 
 ```php
 Talon::boot(Settings::fromArray([
@@ -211,10 +287,7 @@ vendor/bin/talon run all        # every mapped suite, sequentially
 vendor/bin/talon suites         # list mapped suites
 ```
 
-With zero configuration, suites are discovered from `phpunit*.xml` files in the project
-root and `resources/` (`phpunit.mysql.xml` becomes `mysql`; `phpunit.xml.dist` becomes
-`unit`, the default). Projects that need php ini flags or env vars declare a `talon.php`
-at the project root:
+With zero configuration, suites are discovered from `phpunit*.xml` files in the project root and `resources/` (`phpunit.mysql.xml` becomes `mysql`; `phpunit.xml.dist` becomes `unit`, the default). Projects that need php ini flags or env vars declare a `talon.php` at the project root:
 
 ```php
 return [
@@ -230,29 +303,21 @@ return [
 ];
 ```
 
-Per-suite keys: `config` (required), `php` (extra ini flags), `env` (extra env vars) and
-`args` (default PHPUnit arguments) - suite entries merge over the global `php`/`env`.
-Options are forwarded to PHPUnit starting at the first option talon does not recognize
-itself, and everything after `--` is always forwarded verbatim:
+Per-suite keys: `config` (required), `php` (extra ini flags), `env` (extra env vars) and `args` (default PHPUnit arguments) - suite entries merge over the global `php`/`env`. Options are forwarded to PHPUnit starting at the first option talon does not recognize itself, and everything after `--` is always forwarded verbatim:
 
 ```bash
 vendor/bin/talon run unit -- --filter FooTest --testdox
 ```
 
-Each suite runs as its own subprocess (per-suite extensions and env vars work), a single
-suite's exit code is forwarded verbatim, and multiple suites exit with the maximum code
-after a per-suite summary.
+Each suite runs as its own subprocess (per-suite extensions and env vars work), a single suite's exit code is forwarded verbatim, and multiple suites exit with the maximum code after a per-suite summary.
 
 ## Beyond PHPUnit
 
-The traits are the core public API and carry no PHPUnit base-class requirement for their
-non-assertion helpers, so Pest (`uses(...)`) and other runners can consume them too. Pest and
-Codeception adapters are planned for a future release.
+The traits are the core public API and carry no PHPUnit base-class requirement for their non-assertion helpers, so Pest (`uses(...)`) and other runners can consume them too. Pest and Codeception adapters are planned for a future release.
 
 ## Contributing
 
-Talon is developed entirely in Docker - see **[CONTRIBUTING.md](CONTRIBUTING.md)** for the
-full local-development guide. The short version:
+Talon is developed entirely in Docker - see **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full local-development guide. The short version:
 
 ```bash
 cp resources/.env.example .env

@@ -1,5 +1,27 @@
 # Changelog
 
+All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
+
+## [Unreleased]
+
+### Added
+
+- Schema fixtures. Extend `Phalcon\Talon\Database\Schema\AbstractSchema` to declare per-dialect table statements, then run `talon schema` to generate the SQL artifacts. Configured with `schema_source`, `schema_namespace`, `schema_output`, `schema_pre`, and `schema_post`. [#30](https://github.com/phalcon/talon/issues/30)
+- `talon schema` writes one directory per dialect - `_preSchema.sql`, a `.sql` file per table, a generated `manifest.json` recording load order and dependencies, and `_postSchema.sql`. Pre and post are always written, even when empty, so the loader can tell "deliberately nothing" from "the generator never ran". [#30](https://github.com/phalcon/talon/issues/30)
+- `Connection::loadSchema()` accepts a dialect directory as well as a flat `.sql` file, so a project can move to the artifact format on its own schedule. [#30](https://github.com/phalcon/talon/issues/30)
+- `DatabaseTrait::addTable()` and `Connection::addTable()` rebuild a single table from the loaded manifest. Standalone only, and enforced: a declared dependency that does not yet exist throws `SchemaDependencyMissing` rather than failing later as a dialect-specific driver error. [#30](https://github.com/phalcon/talon/issues/30)
+- `Connection::tableExists()`. [#30](https://github.com/phalcon/talon/issues/30)
+
+### Changed
+
+- `Phalcon\Talon\Contracts\Connection` gained `addTable()` and `tableExists()`. Any implementation outside Talon must add both. [#30](https://github.com/phalcon/talon/issues/30)
+- Talon's own `resources/schema/{mysql,pgsql,sqlite}.sql` are now generated directories at `resources/schema/{mysql,pgsql,sqlite}/`, and the four `resources/phpunit.*.xml` configs point `dump_file` at them. [#30](https://github.com/phalcon/talon/issues/30)
+
+### Fixed
+
+- Documentation: `docs/index.md` never covered MariaDB. `UnknownDriver` was described as rejecting anything other than mysql/pgsql/sqlite, and the DSN list, the `fromArray()` example, the environment-variable table, and the Docker command list all omitted it. [#30](https://github.com/phalcon/talon/issues/30)
+- Documentation: `docs/index.md` now lists every exception and documents the `talon` command line runner. [#30](https://github.com/phalcon/talon/issues/30)
+
 ## [0.9.0](https://github.com/phalcon/talon/releases/tag/v0.9.0) (2026-07-30)
 
 ### Changed
@@ -168,3 +190,6 @@
 ### Fixed
 
 ### Removed
+
+[keep_a_changelog]: https://keepachangelog.com/en/1.1.0/
+[semantic_versioning]: https://semver.org/spec/v2.0.0.html
