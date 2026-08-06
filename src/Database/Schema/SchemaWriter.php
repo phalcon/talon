@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Database\Schema;
 
 use Phalcon\Talon\Database\Dialect;
+use Phalcon\Talon\Exceptions\SchemaTableDuplicate;
 
 use function file_put_contents;
 use function is_dir;
@@ -49,14 +50,24 @@ final class SchemaWriter
         $this->put($directory, SchemaManifest::PRE_SCHEMA, $this->generator->preSchema($dialect));
 
         $present = [];
+        $seen    = [];
         foreach ($this->collector->definitions() as $definition) {
             $sql = $this->generator->table($definition, $dialect);
             if ($sql === '') {
                 continue;
             }
 
+            // The table name is the file name and the manifest key, so a
+            // duplicate would silently overwrite - the one failure mode a
+            // generated artifact must never have.
+            $table = $definition->getTable();
+            if (isset($seen[$table])) {
+                throw new SchemaTableDuplicate($table, $dialect->value);
+            }
+            $seen[$table] = true;
+
             $present[] = $definition;
-            $this->put($directory, $definition->getTable() . '.sql', $sql);
+            $this->put($directory, $table . '.sql', $sql);
         }
 
         $this->put($directory, SchemaManifest::FILE, SchemaManifest::encode($dialect, $present));

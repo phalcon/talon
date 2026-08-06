@@ -18,6 +18,7 @@ use Phalcon\Talon\Database\Schema\SchemaCollector;
 use Phalcon\Talon\Database\Schema\SchemaGenerator;
 use Phalcon\Talon\Database\Schema\SchemaManifest;
 use Phalcon\Talon\Database\Schema\SchemaWriter;
+use Phalcon\Talon\Exceptions\SchemaTableDuplicate;
 use PHPUnit\Framework\TestCase;
 
 use function array_map;
@@ -72,6 +73,22 @@ final class SchemaWriterTest extends TestCase
             ['widgets', 'zones'],
             SchemaManifest::fromDirectory($directory)->getTables()
         );
+    }
+
+    public function testDuplicateTableNamesAreRefused(): void
+    {
+        $collector = new SchemaCollector(
+            dirname(__DIR__, 3) . '/Fixtures/Duplicate',
+            'Phalcon\\Talon\\Tests\\Fixtures\\Duplicate'
+        );
+        $writer    = new SchemaWriter($collector, new SchemaGenerator($collector));
+
+        $this->expectException(SchemaTableDuplicate::class);
+        $this->expectExceptionMessage(
+            "Two schema definitions both declare the table 'widgets' for the 'sqlite' dialect."
+        );
+
+        $writer->write(Dialect::Sqlite, $this->root);
     }
 
     public function testEmptyPreAndPostAreStillWritten(): void

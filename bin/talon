@@ -14,8 +14,21 @@ declare(strict_types=1);
 
 use Phalcon\Talon\Cli\Kernel;
 
+// Composer's bin proxy sets this and it always names the *consuming* project's
+// autoloader. It has to win: when talon is installed as a path repository with
+// symlink:true, __DIR__ resolves to the real checkout, so the dev-checkout
+// candidate below would load talon's own vendor and hide the host project's
+// classes entirely.
+$candidates = [];
+if (isset($GLOBALS['_composer_autoload_path']) && is_string($GLOBALS['_composer_autoload_path'])) {
+    $candidates[] = $GLOBALS['_composer_autoload_path'];
+}
+
 // Dev checkout: bin/../vendor; installed dependency: vendor/phalcon/talon/bin -> vendor.
-foreach ([dirname(__DIR__) . '/vendor/autoload.php', dirname(__DIR__, 3) . '/autoload.php'] as $autoload) {
+$candidates[] = dirname(__DIR__) . '/vendor/autoload.php';
+$candidates[] = dirname(__DIR__, 3) . '/autoload.php';
+
+foreach ($candidates as $autoload) {
     if (file_exists($autoload)) {
         require $autoload;
 
