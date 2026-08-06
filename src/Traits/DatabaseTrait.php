@@ -36,6 +36,16 @@ trait DatabaseTrait
     }
 
     /**
+     * Create one table from the loaded schema manifest. Standalone only - its
+     * declared dependencies must already exist, because the bulk load's
+     * pre-schema is not in effect here.
+     */
+    public function addTable(string $table): void
+    {
+        $this->getConnection()->addTable($table);
+    }
+
+    /**
      * @param array<string, mixed> $criteria
      */
     public function assertInDatabase(string $table, array $criteria = []): void

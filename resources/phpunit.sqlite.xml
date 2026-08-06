@@ -12,6 +12,6 @@
     <php>
         <env name="driver" value="sqlite"/>
         <env name="DATA_SQLITE_NAME" value=":memory:"/>
-        <env name="dump_file" value="resources/schema/sqlite.sql"/>
+        <env name="dump_file" value="resources/schema/sqlite"/>
     </php>
 </phpunit>

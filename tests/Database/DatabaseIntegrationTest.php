@@ -36,7 +36,7 @@ final class DatabaseIntegrationTest extends AbstractDatabaseTestCase
         $dumpFile = $this->getSettings()->get('dump_file');
         $this->getConnection()->loadSchema(
             $this->getSettings()->rootPath(
-                is_string($dumpFile) && $dumpFile !== '' ? $dumpFile : 'resources/schema/sqlite.sql'
+                is_string($dumpFile) && $dumpFile !== '' ? $dumpFile : 'resources/schema/sqlite'
             )
         );
         $this->getConnection()->execute("INSERT INTO users (id, email) VALUES (1, 'john.connor@skynet.dev')");

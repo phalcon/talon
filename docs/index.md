@@ -30,6 +30,7 @@ integration, and functional tests:
   - [Services](#service-tests)
   - [Functional](#functional-tests)
   - [Browser](#browser-tests)
+- [Schema fixtures](#schema-fixtures)
 - [Mocking a resultset](#mocking-a-resultset)
 - [Using the traits directly](#using-the-traits-directly)
 - [Exceptions](#exceptions)
@@ -148,9 +149,11 @@ use Phalcon\Talon\Settings;
 $settings = Settings::fromArray([
     'root' => dirname(__DIR__),
     'db'   => [
-        'mysql'  => ['host' => '127.0.0.1', 'port' => 3306, 'dbname' => 'app',
-                     'username' => 'root', 'password' => '', 'charset' => 'utf8mb4'],
-        'sqlite' => ['dbname' => ':memory:'],
+        'mariadb' => ['host' => '127.0.0.1', 'port' => 3307, 'dbname' => 'app',
+                      'username' => 'root', 'password' => '', 'charset' => 'utf8mb4'],
+        'mysql'   => ['host' => '127.0.0.1', 'port' => 3306, 'dbname' => 'app',
+                      'username' => 'root', 'password' => '', 'charset' => 'utf8mb4'],
+        'sqlite'  => ['dbname' => ':memory:'],
     ],
     'services' => [
         'redis'        => ['host' => '127.0.0.1', 'port' => 6379, 'index' => 0],
@@ -188,14 +191,22 @@ abstract class TestCase extends \Phalcon\Talon\PHPUnit\AbstractDatabaseTestCase
 ### Database options & DSN
 
 ```php
+$settings->getDatabaseDsn('mariadb');   // mysql:host=...;port=...;dbname=...;charset=...
 $settings->getDatabaseDsn('mysql');     // mysql:host=...;port=...;dbname=...;charset=...
 $settings->getDatabaseDsn('pgsql');     // pgsql:host=...;port=...;dbname=...
 $settings->getDatabaseDsn('sqlite');    // sqlite:...
 $settings->getDatabaseOptions('mysql'); // ['host'=>..., 'username'=>..., ...]
 ```
 
-Supported drivers: `mysql`, `pgsql`, `sqlite`. Any other driver throws
+Supported drivers: `mariadb`, `mysql`, `pgsql`, `sqlite`. Any other driver throws
 `Exceptions\UnknownDriver`.
+
+`mariadb` and `mysql` are configured independently - separate `DATA_MARIADB_*` and
+`DATA_MYSQL_*` variables, so they can point at different servers - but they share the
+`mysql:` DSN prefix because MariaDB connects through `pdo_mysql`. PDO therefore reports
+`mysql` as the driver name, which is correct: the SQL dialect is the same. Use
+`getDriver()` when a test needs to tell the two servers apart, and `getDialect()` when it
+needs the SQL flavor.
 
 ### Service options
 
@@ -295,7 +306,11 @@ Available helpers:
 ### Database tests
 
 `AbstractDatabaseTestCase` adds `DatabaseTrait`. The driver comes from the `driver`
-environment variable (default `sqlite`); credentials come from `Settings`.
+environment variable (`sqlite`, `mysql`, `mariadb`, `pgsql`; default `sqlite`); credentials
+come from `Settings`.
+
+Normally you set `dump_file` and the schema loads itself the first time a connection is
+built, so `setUp()` only seeds data:
 
 ```php
 use Phalcon\Talon\PHPUnit\AbstractDatabaseTestCase;
@@ -305,7 +320,6 @@ final class UserTest extends AbstractDatabaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->getConnection()->loadSchema($this->getSettings()->rootPath('resources/schema/sqlite.sql'));
         $this->getConnection()->execute("INSERT INTO users (id, email) VALUES (1, 'john.connor@skynet.dev')");
     }
 
@@ -320,8 +334,11 @@ final class UserTest extends AbstractDatabaseTestCase
 | Method | Purpose |
 |--------|---------|
 | `getConnection()` | the cached `Connection` for the active driver |
+| `getDialect()` | the SQL dialect enum - `mariadb` reports `Dialect::Mysql` |
+| `getDriver()` | the configured driver name - tells `mariadb` and `mysql` apart |
 | `getFromDatabase($table, $criteria)` | rows matching the criteria |
 | `assertInDatabase($table, $criteria)` / `assertNotInDatabase(...)` | row-presence assertions |
+| `addTable($table)` | create one table from the loaded schema manifest (see [schema fixtures](#schema-fixtures)) |
 | `resetConnections()` *(static)* | drop the cached connection (called automatically on `tearDown`) |
 
 ### Service tests
@@ -432,6 +449,141 @@ in one request authenticates the next. A missing link, button, or form raises
 
 ---
 
+## Schema fixtures
+
+A schema fixture declares one table's DDL per dialect. Talon generates the SQL artifacts
+from them; your tests use the same classes to create, truncate and populate.
+
+```php
+use Phalcon\Talon\Database\Schema\AbstractSchema;
+
+final class UsersSchema extends AbstractSchema
+{
+    protected string $table = 'users';
+
+    public function insert(int $id, string $email): int
+    {
+        return $this->execute(
+            'INSERT INTO users (id, email) VALUES (:id, :email)',
+            [':id' => $id, ':email' => $email]
+        );
+    }
+
+    protected function getStatementsMysql(): array
+    {
+        return ['CREATE TABLE users (id INT PRIMARY KEY, email VARCHAR(255));'];
+    }
+
+    protected function getStatementsPgsql(): array
+    {
+        return ['CREATE TABLE users (id INT PRIMARY KEY, email VARCHAR(255));'];
+    }
+
+    protected function getStatementsSqlite(): array
+    {
+        return ['CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT);'];
+    }
+}
+```
+
+The three per-dialect methods are abstract on purpose - a new dialect cannot be silently
+forgotten. There is no `mariadb` method: MariaDB uses the MySQL dialect.
+
+- **Creation statements only.** Do not write a `DROP TABLE` yourself; the generator
+  prepends one from the table name.
+- **An empty list means the table does not exist in that dialect.** It is skipped
+  entirely, drop included, and gets no manifest entry.
+- **`getDependencies()`** returns the table names that must exist first. Override it when
+  the table carries a foreign key.
+- **`insert()` is yours.** The contract covers the lifecycle - `create()`, `drop()`,
+  `clear()` - never the data shape, so each fixture types its own insert signature.
+- **One fixture, one table.** The table name is the artifact file name and the manifest
+  key, so two fixtures declaring the same table throw `SchemaTableDuplicate`. A fixture
+  whose statements create a second table gets no generated `DROP` for it - write that drop
+  yourself, or split the fixture in two.
+
+Two interfaces split the two lifetimes a fixture has. `AbstractSchema` implements both:
+
+| Interface | When | Methods |
+|-----------|------|---------|
+| `Schema\SchemaDefinition` | build time, no connection | `getTable()`, `getStatements(Dialect)`, `getDependencies()` |
+| `Schema\SchemaFixture` | run time, needs PDO | `create()`, `drop()`, `clear()` |
+
+### Generating the artifacts
+
+```bash
+talon schema             # every dialect
+talon schema mysql       # one dialect
+```
+
+Configure it with these settings (env vars, or keys in `Settings::fromArray()`):
+
+| Setting | Meaning |
+|---------|---------|
+| `schema_source` | Directory holding the fixture classes, relative to the project root |
+| `schema_namespace` | Namespace prefix for those classes |
+| `schema_output` | Directory the artifacts are written to, relative to the project root |
+| `schema_pre` | FQCN run before every table - session setup, namespace creation |
+| `schema_post` | FQCN run after every table - closes whatever `schema_pre` opened |
+
+Each dialect gets its own directory:
+
+```
+schema/mysql/_preSchema.sql     always written, even when empty
+schema/mysql/users.sql          one file per table: its DROP, then its creation statements
+schema/mysql/manifest.json      load order, dependencies, per-dialect presence
+schema/mysql/_postSchema.sql    always written, even when empty
+```
+
+Filenames follow your table names verbatim, so casing is mixed and a schema-qualified name
+keeps its dot (`private.orders_x_products.sql`). The manifest is **generated, never
+hand-edited** - if it is wrong, fix a fixture class and regenerate.
+
+`_preSchema.sql` and `_postSchema.sql` are written even when they have no statements: the
+loader must be able to tell "deliberately nothing" from "the generator never ran". A
+silently skipped MySQL pre-schema would leave `FOREIGN_KEY_CHECKS` on and fail the bulk
+load in ways that point nowhere near the cause.
+
+### Loading
+
+Point `dump_file` at the dialect directory and `AbstractDatabaseTestCase` loads it on the
+first connection - `_preSchema.sql`, then the manifest's tables in order, then
+`_postSchema.sql`:
+
+```xml
+<env name="dump_file" value="resources/schema/mysql"/>
+```
+
+`loadSchema()` also still accepts a single flat `.sql` file, so a project can migrate to
+the directory format on its own schedule. `SchemaGenerator::generate()` renders that flat
+form if you need it.
+
+### `addTable()` for a throwaway table
+
+The default path - load the whole schema once, then truncate - stays the right one: it is
+fast, ordered and dependency-safe. `addTable()` is the escape hatch for a test that needs
+one table rebuilt, typically a structural test about DDL itself:
+
+```php
+$this->addTable('users');
+```
+
+It is **standalone only, and that is enforced**. A table's declared dependencies must
+already exist, or it throws `Exceptions\SchemaDependencyMissing` naming the missing one.
+`addTable()` never resolves dependencies for you - call it once per table, in order:
+
+```php
+$this->addTable('users');   // the dependency first
+$this->addTable('orders');  // then the dependent
+```
+
+The strictness is deliberate. `_preSchema` is live only during the bulk load; by test time
+`_postSchema` has restored `FOREIGN_KEY_CHECKS=1`, so a table with foreign keys that loads
+fine in bulk can fail standalone on MySQL for reasons nothing at the call site suggests.
+Refusing up front beats a dialect-specific driver error.
+
+---
+
 ## Mocking a resultset
 
 `ResultSetTrait::mockResultSet()` builds a mocked `Phalcon\Mvc\Model\Resultset` with no
@@ -495,8 +647,16 @@ try {
 | Exception | Thrown when |
 |-----------|-------------|
 | `InvalidConfiguration` | a required `Settings` key is missing/invalid |
-| `UnknownDriver` | a DB driver other than mysql/pgsql/sqlite is requested |
-| `SchemaFileNotFound` | a configured schema dump file does not exist |
+| `UnknownDriver` | a DB driver other than mariadb/mysql/pgsql/sqlite is requested |
+| `UnknownSuite` | `talon run` is given a suite name that is not mapped |
+| `SchemaFileNotFound` | a configured schema dump file or artifact does not exist |
+| `SchemaClassNotFound` | `schema_pre`/`schema_post` names a class that cannot be loaded |
+| `SchemaConnectionMissing` | a fixture's `create()`/`drop()` runs with no PDO attached |
+| `SchemaManifestNotFound` | a schema directory has no `manifest.json` |
+| `SchemaManifestNotLoaded` | `addTable()` is called before any manifest was loaded |
+| `SchemaTableNotFound` | `addTable()` names a table absent from the loaded manifest |
+| `SchemaTableDuplicate` | two schema fixtures declare the same table for one dialect |
+| `SchemaDependencyMissing` | `addTable()` runs before one of the table's dependencies exists |
 | `InvalidApplication` | `appFactory()` returns something without `handle()` |
 | `ResponseNotDispatched` | a response/dispatch assertion runs before `dispatch()` |
 | `MissingService` | the app's DI lacks the `dispatcher` an assertion needs |
@@ -514,8 +674,14 @@ These plain classes are usable anywhere, not just inside a `TestCase`.
 |-------|---------|
 | `Settings` | `fromArray()`, `fromEnv()`, `rootPath()`/`outputPath()`/…, `getDatabaseDsn()`, `getDatabaseOptions()`, `getServiceOptions()`, `get()` |
 | `Environment` | `phalconAvailable()`, `viaExtension()`, `viaImplementation()` |
-| `Database\Connection` | `getPdo()`, `loadSchema($file)`, `select($table, $criteria)`, `execute($sql)` |
+| `Database\Connection` | `getPdo()`, `loadSchema($fileOrDirectory)`, `addTable($table)`, `tableExists($table)`, `select($table, $criteria)`, `execute($sql)` |
+| `Database\Dialect` | enum `Mysql`/`Pgsql`/`Sqlite`; `fromPdo(PDO)`, `quoteIdentifier($name)` |
 | `Database\StatementSplitter` | `split($sql): array` - splits a dump into statements (handles `DELIMITER` and pgsql `$$` blocks) |
+| `Database\Schema\AbstractSchema` | base fixture: `create()`, `drop()`, `clear()`, `getStatements(Dialect)`, `setConnection(PDO)` |
+| `Database\Schema\SchemaCollector` | `definitions()`, `preSchema()`, `postSchema()` - discovers fixtures in a directory |
+| `Database\Schema\SchemaGenerator` | `generate(Dialect)` (flat), `preSchema()`, `table()`, `postSchema()` |
+| `Database\Schema\SchemaWriter` | `write(Dialect, $directory)` - per-table files plus the manifest |
+| `Database\Schema\SchemaManifest` | `encode()`, `fromDirectory()`, `getTables()`, `getDependencies()`, `getFile()` |
 | `Bootstrap\Runner` | `for()`, `before()`, `after()`, `boot()` |
 | `Bootstrap\DiFactory` | `create(?callable $register = null): DiInterface` - a `FactoryDefault` seeded with `config` |
 | `Talon` | `boot()`, `useSettings()`, `settings()`, `reset()` |
@@ -540,6 +706,26 @@ composer cs-fixer             # php-cs-fixer (dry-run)
 composer cs-fixer-fix         # php-cs-fixer (apply)
 ```
 
+`composer test` runs without any database server. The two coverage scripts run the `unit`,
+`mariadb`, `mysql` and `pgsql` suites and merge the results, so they **do** need live
+MariaDB, MySQL and PostgreSQL servers.
+
+### The `talon` command
+
+```bash
+talon run                     # the default suite
+talon run unit sqlite         # named suites; 'all' runs every mapped suite
+talon run unit -- --filter Foo   # everything after -- goes to PHPUnit verbatim
+talon suites                  # list the mapped suites
+talon schema [drivers...]     # generate the schema artifacts
+talon --help | --version
+```
+
+Suites are resolved from a `talon.php` map at the project root, or - with zero
+configuration - discovered from the `phpunit*.xml` files themselves
+(`phpunit.mysql.xml` -> `mysql`; `phpunit.xml.dist` -> `unit`, the default). An unmapped
+name throws `Exceptions\UnknownSuite`.
+
 ### Dockerized environments
 
 The repository ships containers under `resources/docker/` and a root `docker-compose.yml`
@@ -556,6 +742,7 @@ docker compose run --rm app composer install
 # one-off commands
 docker compose run --rm app composer test                              # unit + sqlite
 docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.mysql.xml
+docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.mariadb.xml
 docker compose run --rm app vendor/bin/phpunit -c resources/phpunit.pgsql.xml
 
 # or work inside a long-lived container
@@ -577,7 +764,8 @@ Read by `Settings::fromEnv()` (and the per-driver PHPUnit configs):
 
 | Variable | Default | Used for |
 |----------|---------|----------|
-| `driver` | `sqlite` | active DB driver |
+| `driver` | `sqlite` | active DB driver (`sqlite`, `mysql`, `mariadb`, `pgsql`) |
+| `DATA_MARIADB_HOST` / `_PORT` / `_USER` / `_PASS` / `_NAME` / `_CHARSET` | 127.0.0.1 / 3306 / root / "" / talon / utf8mb4 | MariaDB connection (independent of MySQL) |
 | `DATA_MYSQL_HOST` / `_PORT` / `_USER` / `_PASS` / `_NAME` / `_CHARSET` | 127.0.0.1 / 3306 / root / "" / talon / utf8mb4 | MySQL connection |
 | `DATA_POSTGRES_HOST` / `_PORT` / `_USER` / `_PASS` / `_NAME` / `_SCHEMA` | 127.0.0.1 / 5432 / postgres / "" / talon / "" | PostgreSQL connection |
 | `DATA_SQLITE_NAME` | `:memory:` | SQLite database |
@@ -585,8 +773,13 @@ Read by `Settings::fromEnv()` (and the per-driver PHPUnit configs):
 | `DATA_MEMCACHED_HOST` / `_PORT` / `_WEIGHT` | 127.0.0.1 / 11211 / 0 | Memcached connection |
 | `DATA_REDIS_CLUSTER_HOSTS` / `_AUTH` | "" / "" | Redis Cluster connection (`HOSTS` is comma-separated) |
 | `DATA_BEANSTALKD_HOST` / `_PORT` | "" / "" | Beanstalkd connection |
-| `dump_file` | "" | schema file path, auto-loaded the first time a connection is built for a driver |
+| `dump_file` | "" | schema artifact, auto-loaded the first time a connection is built for a driver - a dialect directory (`resources/schema/mysql`) or a flat `.sql` file |
 | `initial_queries` | "" | SQL run immediately after connecting, before any other statement |
+| `schema_source` | "" | directory holding the schema fixture classes, relative to the project root |
+| `schema_namespace` | "" | namespace prefix for those classes |
+| `schema_output` | "" | directory `talon schema` writes the artifacts to, relative to the project root |
+| `schema_pre` | "" | FQCN emitted before every table |
+| `schema_post` | "" | FQCN emitted after every table |
 
 Docker-only variables (`docker-compose.yml`): `PROJECT_PREFIX`, `PHP_VERSION`,
 `PHALCON_VARIANT`, `UID`, and `GID`. The backing services are gated by Compose

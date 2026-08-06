@@ -48,11 +48,25 @@ final class ConnectionTest extends TestCase
 
     public function testLoadSchemaFromFile(): void
     {
-        $conn = $this->sqlite();
-        $conn->loadSchema(dirname(__DIR__, 3) . '/resources/schema/sqlite.sql');
-        $conn->execute("INSERT INTO users VALUES (2, 'a@b.c')");
+        // Written here rather than read from resources/schema: those are
+        // generated per-dialect directories now, and this test is about the
+        // flat-file path loadSchema() still accepts.
+        $file = dirname(__DIR__, 3) . '/tests/_output/flat-schema-' . uniqid() . '.sql';
+        file_put_contents(
+            $file,
+            "DROP TABLE IF EXISTS users;\n\n"
+            . "CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT);\n"
+        );
 
-        $this->assertCount(1, $conn->select('users', ['email' => 'a@b.c']));
+        try {
+            $conn = $this->sqlite();
+            $conn->loadSchema($file);
+            $conn->execute("INSERT INTO users VALUES (2, 'a@b.c')");
+
+            $this->assertCount(1, $conn->select('users', ['email' => 'a@b.c']));
+        } finally {
+            unlink($file);
+        }
     }
 
     public function testLoadSchemaWithUnreadableFileLoadsNothing(): void
