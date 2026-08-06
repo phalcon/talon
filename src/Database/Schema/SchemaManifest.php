@@ -117,6 +117,26 @@ final class SchemaManifest
     /**
      * @return list<string>
      */
+    private static function stringList(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $result = [];
+        /** @var mixed $item */
+        foreach ($value as $item) {
+            if (is_string($item)) {
+                $result[] = $item;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return list<string>
+     */
     public function getDependencies(string $table): array
     {
         return $this->dependencies[$table] ?? throw new SchemaTableNotFound($table);
@@ -145,25 +165,5 @@ final class SchemaManifest
     public function getTables(): array
     {
         return $this->tables;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function stringList(mixed $value): array
-    {
-        if (!is_array($value)) {
-            return [];
-        }
-
-        $result = [];
-        /** @var mixed $item */
-        foreach ($value as $item) {
-            if (is_string($item)) {
-                $result[] = $item;
-            }
-        }
-
-        return $result;
     }
 }
