@@ -65,54 +65,13 @@ final class Connection implements ConnectionContract
 
     public function getPdo(): PDO
     {
-        if ($this->pdo === null) {
-            $options  = $this->settings->getDatabaseOptions($this->driver);
-            $username = isset($options['username']) && is_string($options['username']) ? $options['username'] : null;
-            $password = isset($options['password']) && is_string($options['password']) ? $options['password'] : null;
-
-            $this->pdo = new PDO(
-                $this->settings->getDatabaseDsn($this->driver),
-                $username,
-                $password
-            );
-
-            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            if ($this->driver === 'sqlite') {
-                $this->pdo->exec('PRAGMA journal_mode = WAL');
-            }
-
-            // Before initial_queries, so those can rely on the search path.
-            if ($this->driver === 'pgsql') {
-                $schema = $options['schema'] ?? '';
-                if (is_string($schema) && $schema !== '') {
-                    $this->pdo->exec(
-                        'SET search_path TO ' . Dialect::Pgsql->quoteIdentifier($schema)
-                    );
-                }
-            }
-
-            $initialQueries = $this->settings->get('initial_queries', '');
-            if (is_string($initialQueries) && $initialQueries !== '') {
-                $this->pdo->exec($initialQueries);
-            }
-        }
-
-        return $this->pdo;
+        return $this->pdo ??= $this->connect();
     }
 
     public function loadSchema(string $dumpFile): void
     {
         if (is_dir($dumpFile)) {
-            $manifest = SchemaManifest::fromDirectory($dumpFile);
-
-            $this->executeFile($manifest->getPreSchemaFile());
-            foreach ($manifest->getTables() as $table) {
-                $this->executeFile($manifest->getFile($table));
-            }
-            $this->executeFile($manifest->getPostSchemaFile());
-
-            $this->manifest = $manifest;
+            $this->loadManifest($dumpFile);
 
             return;
         }
@@ -127,25 +86,8 @@ final class Connection implements ConnectionContract
      */
     public function select(string $table, array $criteria = []): array
     {
-        $dialect = Dialect::fromPdo($this->getPdo());
-
-        $where  = [];
-        $params = [];
-        $index  = 0;
-
-        foreach ($criteria as $key => $value) {
-            $column = $dialect->quoteIdentifier((string) $key);
-
-            // `col = :p` never matches NULL in any dialect; bind no parameter.
-            if ($value === null) {
-                $where[] = $column . ' IS NULL';
-                continue;
-            }
-
-            $placeholder          = 'p' . $index++;
-            $where[]              = $column . ' = :' . $placeholder;
-            $params[$placeholder] = $value;
-        }
+        $dialect          = Dialect::fromPdo($this->getPdo());
+        [$where, $params] = $this->conditions($dialect, $criteria);
 
         $sql = 'SELECT * FROM ' . $dialect->quoteIdentifier($table);
         if ($where !== []) {
@@ -163,12 +105,129 @@ final class Connection implements ConnectionContract
 
     public function tableExists(string $table): bool
     {
-        $dialect  = Dialect::fromPdo($this->getPdo());
+        $dialect          = Dialect::fromPdo($this->getPdo());
+        [$sql, $params]   = $this->existenceQuery($dialect, $table);
+
+        $statement = $this->getPdo()->prepare($sql);
+        $statement->execute($params);
+
+        return (int) $statement->fetchColumn() > 0;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function applyDriverDefaults(PDO $pdo, array $options): void
+    {
+        if ($this->driver === 'sqlite') {
+            $pdo->exec('PRAGMA journal_mode = WAL');
+        }
+
+        // Before the initial queries, so those can rely on the search path.
+        if ($this->driver === 'pgsql') {
+            $this->applySearchPath($pdo, $options);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function applySearchPath(PDO $pdo, array $options): void
+    {
+        // A positive guard rather than an early return: the test environment
+        // always configures a schema, so a `return` here would be a statement
+        // no suite can reach.
+        $schema = $options['schema'] ?? '';
+        if (is_string($schema) && $schema !== '') {
+            $pdo->exec('SET search_path TO ' . Dialect::Pgsql->quoteIdentifier($schema));
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $criteria
+     *
+     * @return array{0: list<string>, 1: array<string, mixed>}
+     */
+    private function conditions(Dialect $dialect, array $criteria): array
+    {
+        $where  = [];
+        $params = [];
+        $index  = 0;
+
+        foreach ($criteria as $key => $value) {
+            $column = $dialect->quoteIdentifier((string) $key);
+
+            // `col = :p` never matches NULL in any dialect; bind no parameter.
+            if ($value === null) {
+                $where[] = $column . ' IS NULL';
+
+                continue;
+            }
+
+            $placeholder          = 'p' . $index++;
+            $where[]              = $column . ' = :' . $placeholder;
+            $params[$placeholder] = $value;
+        }
+
+        return [$where, $params];
+    }
+
+    /**
+     * Builds the connection. Everything driver-specific is delegated, so the
+     * order here is the whole contract: connect, fail loudly, apply the
+     * driver's defaults, then run the project's own queries.
+     */
+    private function connect(): PDO
+    {
+        $options = $this->settings->getDatabaseOptions($this->driver);
+
+        $pdo = new PDO(
+            $this->settings->getDatabaseDsn($this->driver),
+            $this->credential($options, 'username'),
+            $this->credential($options, 'password')
+        );
+
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $this->applyDriverDefaults($pdo, $options);
+        $this->runInitialQueries($pdo);
+
+        return $pdo;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function credential(array $options, string $key): ?string
+    {
+        $value = $options[$key] ?? null;
+
+        return is_string($value) ? $value : null;
+    }
+
+    private function executeFile(string $path): void
+    {
+        if (!file_exists($path)) {
+            throw new SchemaFileNotFound($path);
+        }
+
+        $sql = (string) file_get_contents($path);
+
+        foreach (StatementSplitter::split($sql) as $statement) {
+            $this->getPdo()->exec($statement);
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: array<string, string|null>}
+     */
+    private function existenceQuery(Dialect $dialect, string $table): array
+    {
         $segments = explode('.', $table);
         $name     = (string) end($segments);
         $schema   = count($segments) > 1 ? $segments[0] : null;
 
-        [$sql, $params] = match ($dialect) {
+        return match ($dialect) {
             Dialect::Mysql => [
                 'SELECT COUNT(*) FROM information_schema.TABLES '
                 . 'WHERE TABLE_SCHEMA = IFNULL(:schema, DATABASE()) AND TABLE_NAME = :name',
@@ -185,23 +244,28 @@ final class Connection implements ConnectionContract
                 [':name' => $name],
             ],
         };
-
-        $statement = $this->getPdo()->prepare($sql);
-        $statement->execute($params);
-
-        return (int) $statement->fetchColumn() > 0;
     }
 
-    private function executeFile(string $path): void
+    private function loadManifest(string $directory): void
     {
-        if (!file_exists($path)) {
-            throw new SchemaFileNotFound($path);
+        $manifest = SchemaManifest::fromDirectory($directory);
+
+        $this->executeFile($manifest->getPreSchemaFile());
+        foreach ($manifest->getTables() as $table) {
+            $this->executeFile($manifest->getFile($table));
+        }
+        $this->executeFile($manifest->getPostSchemaFile());
+
+        $this->manifest = $manifest;
+    }
+
+    private function runInitialQueries(PDO $pdo): void
+    {
+        $queries = $this->settings->get('initial_queries', '');
+        if (!is_string($queries) || $queries === '') {
+            return;
         }
 
-        $sql = (string) file_get_contents($path);
-
-        foreach (StatementSplitter::split($sql) as $statement) {
-            $this->getPdo()->exec($statement);
-        }
+        $pdo->exec($queries);
     }
 }

@@ -23,7 +23,7 @@
                 "Phalcon\\Talon\\Cli\\ProcessRunner::open",
                 // The MySQL arm's bound parameters, unreachable under the
                 // sqlite-only unit suite.
-                "Phalcon\\Talon\\Database\\Connection::tableExists"
+                "Phalcon\\Talon\\Database\\Connection::existenceQuery"
             ]
         },
         "CastBool": {
@@ -61,8 +61,8 @@
             "ignore": [
                 "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clear",
                 "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clearMysql",
-                "Phalcon\\Talon\\Database\\Connection::getPdo",
-                "Phalcon\\Talon\\Database\\Connection::tableExists"
+                "Phalcon\\Talon\\Database\\Connection::applySearchPath",
+                "Phalcon\\Talon\\Database\\Connection::existenceQuery"
             ]
         },
         "ConcatOperandRemoval": {
@@ -74,8 +74,8 @@
                 "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clear",
                 "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clearMysql",
                 "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::drop",
-                "Phalcon\\Talon\\Database\\Connection::getPdo",
-                "Phalcon\\Talon\\Database\\Connection::tableExists",
+                "Phalcon\\Talon\\Database\\Connection::applySearchPath",
+                "Phalcon\\Talon\\Database\\Connection::existenceQuery",
                 // render() runs every statement through terminate(), which
                 // puts the ';' back, so removing it here changes nothing.
                 "Phalcon\\Talon\\Database\\Schema\\SchemaGenerator::table"
@@ -88,7 +88,7 @@
                 // satisfies static analysis.
                 "Phalcon\\Talon\\Database\\Schema\\SchemaManifest::fromDirectory",
                 // end() on a non-empty explode() result is always a string.
-                "Phalcon\\Talon\\Database\\Connection::tableExists",
+                "Phalcon\\Talon\\Database\\Connection::existenceQuery",
                 // Suite map values are read back as strings from a PHP array
                 // literal; the casts only satisfy static analysis.
                 "Phalcon\\Talon\\Cli\\SuiteMap::stringMap",
@@ -118,23 +118,23 @@
             ]
         },
         "LogicalAndAllSubExprNegation": {
-            "ignore": ["Phalcon\\Talon\\Database\\Connection::getPdo"]
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::applySearchPath"]
         },
         "LogicalAndNegation": {
-            "ignore": ["Phalcon\\Talon\\Database\\Connection::getPdo"]
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::applySearchPath"]
         },
         "LogicalAndSingleSubExprNegation": {
-            "ignore": ["Phalcon\\Talon\\Database\\Connection::getPdo"]
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::applySearchPath"]
         },
         "NotIdentical": {
-            "ignore": ["Phalcon\\Talon\\Database\\Connection::getPdo"]
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::applySearchPath"]
         },
         "Coalesce": {
             "ignore": [
                 // The search_path block runs only for the pgsql driver, which
                 // the sqlite-only unit suite never builds a connection for.
                 // The pgsql suite covers it; infection does not run that one.
-                "Phalcon\\Talon\\Database\\Connection::getPdo",
+                "Phalcon\\Talon\\Database\\Connection::applySearchPath",
                 // The long/short option keys are only ever true or absent,
                 // so the coalesce order is unobservable.
                 "Phalcon\\Talon\\Cli\\Input::wantsHelp",
@@ -183,13 +183,13 @@
                 // Only the MySQL arm reads the schema half of a qualified
                 // name, so on SQLite the segment count cannot change the
                 // answer.
-                "Phalcon\\Talon\\Database\\Connection::tableExists"
+                "Phalcon\\Talon\\Database\\Connection::existenceQuery"
             ]
         },
         "ArrayItem": {
             // The Postgres arm of the tableExists() query map, unreachable
             // under the sqlite-only unit suite.
-            "ignore": ["Phalcon\\Talon\\Database\\Connection::tableExists"]
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::existenceQuery"]
         },
         "BitwiseOr": {
             // JSON_UNESCAPED_SLASHES and JSON_UNESCAPED_UNICODE only change
@@ -207,15 +207,15 @@
         "GreaterThanNegotiation": {
             // As GreaterThan below: only the MySQL arm reads the schema half
             // of a qualified name.
-            "ignore": ["Phalcon\\Talon\\Database\\Connection::tableExists"]
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::existenceQuery"]
         },
         "Ternary": {
-            "ignore": ["Phalcon\\Talon\\Database\\Connection::tableExists"]
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::existenceQuery"]
         },
         "GreaterThan": {
             // The schema half of a qualified name is only consulted by the
             // MySQL arm, so on SQLite the comparison cannot change the answer.
-            "ignore": ["Phalcon\\Talon\\Database\\Connection::tableExists"]
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::existenceQuery"]
         },
         "Identical": {
             // Under the sqlite-only unit suite the guard always short-circuits
@@ -231,7 +231,7 @@
             "ignore": [
                 // The pgsql search_path guard, unreachable under the
                 // sqlite-only unit suite infection runs.
-                "Phalcon\\Talon\\Database\\Connection::getPdo",
+                "Phalcon\\Talon\\Database\\Connection::applySearchPath",
                 "Phalcon\\Talon\\Environment::viaImplementation"
             ]
         },
@@ -265,7 +265,7 @@
                 // sqlite-only unit suite that infection runs. Their behavior
                 // is covered by the mysql, mariadb and pgsql suites instead.
                 "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clear",
-                "Phalcon\\Talon\\Database\\Connection::tableExists"
+                "Phalcon\\Talon\\Database\\Connection::existenceQuery"
             ]
         },
         "PublicVisibility": {
@@ -298,7 +298,8 @@
                 // suite infection runs is sqlite-only.
                 "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::advanceSequence",
                 "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clearMysql",
-                "Phalcon\\Talon\\Database\\Connection::getPdo::89",
+                "Phalcon\\Talon\\Database\\Connection::applySearchPath",
+                "Phalcon\\Talon\\Database\\Connection::applyDriverDefaults",
                 // Under the phalcon/phalcon (v6) provider the mocked
                 // Resultset derives count() from the rows property, so seeding
                 // the count property as well is redundant there. It is kept
@@ -313,7 +314,7 @@
                 "Phalcon\\Talon\\PHPUnit\\AbstractBrowserTestCase::tearDown::39",
                 // PDO on PHP >= 8.0 already defaults to ERRMODE_EXCEPTION;
                 // the explicit setAttribute() is a belt-and-braces no-op.
-                "Phalcon\\Talon\\Database\\Connection::getPdo::54"
+                "Phalcon\\Talon\\Database\\Connection::connect"
             ]
         },
         "Throw_": {
