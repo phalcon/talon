@@ -19,6 +19,7 @@ use Phalcon\Talon\Database\Schema\SchemaGenerator;
 use Phalcon\Talon\Database\Schema\SchemaManifest;
 use Phalcon\Talon\Database\Schema\SchemaWriter;
 use Phalcon\Talon\Exceptions\SchemaTableDuplicate;
+use Phalcon\Talon\Traits\FileSystemTrait;
 use PHPUnit\Framework\TestCase;
 
 use function array_map;
@@ -26,13 +27,13 @@ use function basename;
 use function dirname;
 use function file_get_contents;
 use function glob;
-use function is_dir;
 use function rmdir;
 use function sort;
-use function unlink;
 
 final class SchemaWriterTest extends TestCase
 {
+    use FileSystemTrait;
+
     private const FIXTURE_NAMESPACE = 'Phalcon\\Talon\\Tests\\Fixtures\\Schema';
 
     private string $root = '';
@@ -46,21 +47,10 @@ final class SchemaWriterTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (Dialect::cases() as $dialect) {
-            $directory = $this->root . '/' . $dialect->value;
-            foreach (glob($directory . '/*') ?: [] as $file) {
-                unlink($file);
-            }
-
-            if (is_dir($directory)) {
-                rmdir($directory);
-            }
-        }
-
-        if (is_dir($this->root)) {
-            rmdir($this->root);
-        }
-
+        // Mutation runs leave debris under misspelled paths, including
+        // dotfiles that glob() will not match. safeDeleteDirectory() walks
+        // the tree itself, so nothing survives to make rmdir() warn.
+        $this->safeDeleteDirectory($this->root);
         parent::tearDown();
     }
 
@@ -85,7 +75,8 @@ final class SchemaWriterTest extends TestCase
 
         $this->expectException(SchemaTableDuplicate::class);
         $this->expectExceptionMessage(
-            "Two schema definitions both declare the table 'widgets' for the 'sqlite' dialect."
+            "Two schema definitions both declare the table 'widgets' for the 'sqlite' dialect. "
+            . 'Table names are the artifact key, so the second would overwrite the first.'
         );
 
         $writer->write(Dialect::Sqlite, $this->root);

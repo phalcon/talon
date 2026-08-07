@@ -136,7 +136,8 @@ final class SchemaManifestTest extends TestCase
             '{"dialect":"sqlite","tables":['
             . '"not-an-object",'
             . '{"noTableKey":true},'
-            . '{"table":"widgets","dependencies":"not-a-list"}'
+            . '{"table":"widgets","dependencies":"not-a-list"},'
+            . '{"table":"zones","file":"zones.sql","dependencies":["widgets",7,"albums"]}'
             . ']}'
         );
 
@@ -145,9 +146,13 @@ final class SchemaManifestTest extends TestCase
         // The two junk rows are skipped; the third keeps its table but drops
         // the non-list dependencies, and falls back to <table>.sql for a
         // missing file key.
-        $this->assertSame(['widgets'], $manifest->getTables());
+        $this->assertSame(['widgets', 'zones'], $manifest->getTables());
         $this->assertSame([], $manifest->getDependencies('widgets'));
         $this->assertSame($this->directory . '/widgets.sql', $manifest->getFile('widgets'));
+
+        // Every string dependency survives; the non-string one is dropped
+        // without disturbing the ones around it.
+        $this->assertSame(['widgets', 'albums'], $manifest->getDependencies('zones'));
     }
 
     public function testManifestWithoutATablesKeyReadsAsEmpty(): void
@@ -178,6 +183,16 @@ final class SchemaManifestTest extends TestCase
     public function testUnknownTableThrows(): void
     {
         $manifest = $this->write();
+
+        // Both accessors gate on the same map, so both must refuse.
+        $file = null;
+        try {
+            $manifest->getFile('nope');
+        } catch (SchemaTableNotFound $exception) {
+            $file = $exception->getMessage();
+        }
+
+        $this->assertSame("Table 'nope' is not in the schema manifest", $file);
 
         $this->expectException(SchemaTableNotFound::class);
         $this->expectExceptionMessage("Table 'nope' is not in the schema manifest");

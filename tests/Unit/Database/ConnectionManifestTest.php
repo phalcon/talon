@@ -17,12 +17,14 @@ use Phalcon\Talon\Database\Connection;
 use Phalcon\Talon\Database\Dialect;
 use Phalcon\Talon\Database\Schema\SchemaCollector;
 use Phalcon\Talon\Database\Schema\SchemaGenerator;
+use Phalcon\Talon\Database\Schema\SchemaManifest;
 use Phalcon\Talon\Database\Schema\SchemaWriter;
 use Phalcon\Talon\Exceptions\SchemaDependencyMissing;
 use Phalcon\Talon\Exceptions\SchemaManifestNotFound;
 use Phalcon\Talon\Exceptions\SchemaManifestNotLoaded;
 use Phalcon\Talon\Exceptions\SchemaTableNotFound;
 use Phalcon\Talon\Settings;
+use Phalcon\Talon\Traits\FileSystemTrait;
 use PHPUnit\Framework\TestCase;
 
 use function dirname;
@@ -31,10 +33,11 @@ use function glob;
 use function is_dir;
 use function mkdir;
 use function rmdir;
-use function unlink;
 
 final class ConnectionManifestTest extends TestCase
 {
+    use FileSystemTrait;
+
     private const FIXTURE_NAMESPACE = 'Phalcon\\Talon\\Tests\\Fixtures\\Schema';
 
     private string $root = '';
@@ -48,29 +51,10 @@ final class ConnectionManifestTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (Dialect::cases() as $dialect) {
-            $directory = $this->root . '/' . $dialect->value;
-            foreach (glob($directory . '/*') ?: [] as $file) {
-                unlink($file);
-            }
-
-            if (is_dir($directory)) {
-                rmdir($directory);
-            }
-        }
-
-        // Cleaned here rather than at the end of the test that writes it: a
-        // failed assertion would skip an inline unlink, and the leftover file
-        // makes rmdir() warn - which phpunit.xml.dist's failOnWarning turns
-        // into a second, misleading failure.
-        foreach (glob($this->root . '/*.sql') ?: [] as $file) {
-            unlink($file);
-        }
-
-        if (is_dir($this->root)) {
-            rmdir($this->root);
-        }
-
+        // Mutation runs leave debris under misspelled paths, including
+        // dotfiles that glob() will not match. safeDeleteDirectory() walks
+        // the tree itself, so nothing survives to make rmdir() warn.
+        $this->safeDeleteDirectory($this->root);
         parent::tearDown();
     }
 
@@ -170,6 +154,28 @@ final class ConnectionManifestTest extends TestCase
         $connection->loadSchema($directory);
 
         $this->assertSame([], $connection->select('widgets'));
+    }
+
+    public function testLoadSchemaRunsPreAndPostSchema(): void
+    {
+        $directory = $this->write();
+
+        // Both bracket files are rewritten to leave a visible marker, so a
+        // loader that skipped either one is caught rather than assumed.
+        file_put_contents(
+            $directory . '/' . SchemaManifest::PRE_SCHEMA,
+            "CREATE TABLE pre_marker (id INTEGER);\n"
+        );
+        file_put_contents(
+            $directory . '/' . SchemaManifest::POST_SCHEMA,
+            "CREATE TABLE post_marker (id INTEGER);\n"
+        );
+
+        $connection = $this->connection();
+        $connection->loadSchema($directory);
+
+        $this->assertTrue($connection->tableExists('pre_marker'));
+        $this->assertTrue($connection->tableExists('post_marker'));
     }
 
     public function testTableExistsReflectsTheDatabase(): void

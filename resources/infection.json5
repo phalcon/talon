@@ -19,7 +19,12 @@
             // STDIN in the descriptor spec is interactive TTY passthrough; a
             // self-hosted test cannot observe it without owning the parent's
             // stdio, which PHPUnit does.
-            "ignore": ["Phalcon\\Talon\\Cli\\ProcessRunner::open"]
+            "ignore": [
+                "Phalcon\\Talon\\Cli\\ProcessRunner::open",
+                // The MySQL arm's bound parameters, unreachable under the
+                // sqlite-only unit suite.
+                "Phalcon\\Talon\\Database\\Connection::tableExists"
+            ]
         },
         "CastBool": {
             "ignore": [
@@ -35,8 +40,58 @@
             // work - not observable from a test.
             "ignore": ["Phalcon\\Talon\\Http\\JsonSubset::containsList"]
         },
+        "CastInt": {
+            "ignore": [
+                // PDO::exec() returns int|false, and false only on a failure
+                // that ERRMODE_EXCEPTION has already turned into a throw. The
+                // cast is a no-op on every path a test can observe.
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clear",
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clearMysql",
+                // fetchColumn() returns a numeric string on MySQL and
+                // Postgres and an int on SQLite; both compare > 0 the same
+                // way, so the cast only satisfies static analysis.
+                "Phalcon\\Talon\\Database\\Connection::tableExists"
+            ]
+        },
+        "Concat": {
+            // All three are unreachable under the sqlite-only unit suite that
+            // infection runs: clear()'s MySQL/Postgres arms, clearMysql()
+            // entirely, and getPdo()'s pgsql search_path block. The mysql,
+            // mariadb and pgsql suites cover them.
+            "ignore": [
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clear",
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clearMysql",
+                "Phalcon\\Talon\\Database\\Connection::getPdo",
+                "Phalcon\\Talon\\Database\\Connection::tableExists"
+            ]
+        },
+        "ConcatOperandRemoval": {
+            "ignore": [
+                // Two shapes, both unobservable. The MySQL/Postgres arms of
+                // clear() are unreachable under the sqlite-only unit suite,
+                // and dropping the trailing ';' from a single statement passed
+                // to PDO::exec() leaves valid SQL in every dialect.
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clear",
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clearMysql",
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::drop",
+                "Phalcon\\Talon\\Database\\Connection::getPdo",
+                "Phalcon\\Talon\\Database\\Connection::tableExists",
+                // render() runs every statement through terminate(), which
+                // puts the ';' back, so removing it here changes nothing.
+                "Phalcon\\Talon\\Database\\Schema\\SchemaGenerator::table"
+            ]
+        },
         "CastString": {
             "ignore": [
+                // file_get_contents() returns false only when the file cannot
+                // be read, and is_file() has already gated that. The cast only
+                // satisfies static analysis.
+                "Phalcon\\Talon\\Database\\Schema\\SchemaManifest::fromDirectory",
+                // end() on a non-empty explode() result is always a string.
+                "Phalcon\\Talon\\Database\\Connection::tableExists",
+                // Suite map values are read back as strings from a PHP array
+                // literal; the casts only satisfy static analysis.
+                "Phalcon\\Talon\\Cli\\SuiteMap::stringMap",
                 // json_encode() only returns false for input it cannot encode
                 // (malformed UTF-8, recursion, INF/NAN). Params reaching a REST
                 // verb are always encodable, so the cast is a no-op.
@@ -62,8 +117,24 @@
                 "Phalcon\\Talon\\Browser\\Client::normalizeResponse::160"
             ]
         },
+        "LogicalAndAllSubExprNegation": {
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::getPdo"]
+        },
+        "LogicalAndNegation": {
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::getPdo"]
+        },
+        "LogicalAndSingleSubExprNegation": {
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::getPdo"]
+        },
+        "NotIdentical": {
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::getPdo"]
+        },
         "Coalesce": {
             "ignore": [
+                // The search_path block runs only for the pgsql driver, which
+                // the sqlite-only unit suite never builds a connection for.
+                // The pgsql suite covers it; infection does not run that one.
+                "Phalcon\\Talon\\Database\\Connection::getPdo",
                 // The long/short option keys are only ever true or absent,
                 // so the coalesce order is unobservable.
                 "Phalcon\\Talon\\Cli\\Input::wantsHelp",
@@ -73,13 +144,22 @@
         "DecrementInteger": {
             // The suite list is never empty and exit codes are >= 0, so
             // any negative initial max() seed is unobservable.
-            "ignore": ["Phalcon\\Talon\\Cli\\Command\\RunCommand::execute::66"]
+            "ignore": [
+                "Phalcon\\Talon\\Cli\\Command\\RunCommand::execute::66",
+                // mkdir() mode 0776 still leaves the directory writable by
+                // its owner, which is all the writer needs.
+                "Phalcon\\Talon\\Database\\Schema\\SchemaWriter::write"
+            ]
         },
         "FunctionCallRemoval": {
-            // xdebug is not loaded in the test images (pcov is);
-            // ini_set('xdebug.*') is a silent no-op there, so whether any
-            // single tuning call runs is unobservable.
             "ignore": [
+                // glob() already returns its matches sorted; the explicit
+                // sort() only guarantees the order the manifest depends on
+                // against a platform that does not.
+                "Phalcon\\Talon\\Database\\Schema\\SchemaCollector::definitions",
+                // xdebug is not loaded in the test images (pcov is);
+                // ini_set('xdebug.*') is a silent no-op there, so whether any
+                // single tuning call runs is unobservable.
                 "Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::100",
                 "Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::101",
                 "Phalcon\\Talon\\Bootstrap\\Runner::initEnvironment::102",
@@ -99,11 +179,71 @@
                 "Phalcon\\Talon\\Database\\StatementSplitter::split::64",
                 // The type DSL has no spec carrying two colons, so raising
                 // explode()'s limit cannot change how a spec splits.
-                "Phalcon\\Talon\\Http\\JsonType::matchesSingle"
+                "Phalcon\\Talon\\Http\\JsonType::matchesSingle",
+                // Only the MySQL arm reads the schema half of a qualified
+                // name, so on SQLite the segment count cannot change the
+                // answer.
+                "Phalcon\\Talon\\Database\\Connection::tableExists"
             ]
+        },
+        "ArrayItem": {
+            // The Postgres arm of the tableExists() query map, unreachable
+            // under the sqlite-only unit suite.
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::tableExists"]
+        },
+        "BitwiseOr": {
+            // JSON_UNESCAPED_SLASHES and JSON_UNESCAPED_UNICODE only change
+            // the output for table names carrying a slash or non-ASCII
+            // character; the manifest is read back with json_decode(), which
+            // is indifferent to either encoding.
+            "ignore": ["Phalcon\\Talon\\Database\\Schema\\SchemaManifest::encode"]
+        },
+        "FalseValue": {
+            // json_encode() only fails on input it cannot encode - malformed
+            // UTF-8, recursion, INF/NAN. A manifest is table names and string
+            // lists, so the false branch is unreachable.
+            "ignore": ["Phalcon\\Talon\\Database\\Schema\\SchemaManifest::encode"]
+        },
+        "GreaterThanNegotiation": {
+            // As GreaterThan below: only the MySQL arm reads the schema half
+            // of a qualified name.
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::tableExists"]
+        },
+        "Ternary": {
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::tableExists"]
+        },
+        "GreaterThan": {
+            // The schema half of a qualified name is only consulted by the
+            // MySQL arm, so on SQLite the comparison cannot change the answer.
+            "ignore": ["Phalcon\\Talon\\Database\\Connection::tableExists"]
+        },
+        "Identical": {
+            // Under the sqlite-only unit suite the guard always short-circuits
+            // on the dialect check, so flipping the null comparison cannot
+            // change which branch runs.
+            "ignore": ["Phalcon\\Talon\\Database\\Schema\\AbstractSchema::advanceSequence"]
+        },
+        "LogicalAnd": {
+            // The v6 test image has no phalcon extension, so
+            // !extension_loaded() is always true here and && behaves as ||.
+            // Telling them apart needs the v5 image, where the extension
+            // supplies the same FQCN.
+            "ignore": [
+                // The pgsql search_path guard, unreachable under the
+                // sqlite-only unit suite infection runs.
+                "Phalcon\\Talon\\Database\\Connection::getPdo",
+                "Phalcon\\Talon\\Environment::viaImplementation"
+            ]
+        },
+        "LogicalOrSingleSubExprNegation": {
+            // Same reasoning as the All variant below.
+            "ignore": ["Phalcon\\Talon\\Environment::phalconAvailable"]
         },
         "LogicalOrAllSubExprNegation": {
             "ignore": [
+                // Reached only on Postgres; the unit suite is sqlite-only, so
+                // the guard always takes the early return here.
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::advanceSequence",
                 // !A || !B differs from A || B only when no Phalcon provider
                 // is present at all - the suite cannot run in that state.
                 "Phalcon\\Talon\\Environment::phalconAvailable",
@@ -116,17 +256,61 @@
             ]
         },
         "MatchArmRemoval": {
-            // The default arm is dead code: getDatabaseOptions() already threw
-            // UnknownDriver for any driver outside DRIVERS before the match.
-            "ignore": ["Phalcon\\Talon\\Settings::getDatabaseDsn::250"]
+            "ignore": [
+                // The default arm is dead code: getDatabaseOptions() already
+                // threw UnknownDriver for any driver outside DRIVERS before
+                // the match.
+                "Phalcon\\Talon\\Settings::getDatabaseDsn::250",
+                // The MySQL and Postgres arms are unreachable under the
+                // sqlite-only unit suite that infection runs. Their behavior
+                // is covered by the mysql, mariadb and pgsql suites instead.
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clear",
+                "Phalcon\\Talon\\Database\\Connection::tableExists"
+            ]
+        },
+        "PublicVisibility": {
+            // Trait methods are the package's public API, called by the
+            // consuming test case. A self-hosted test calls them from inside
+            // the composing class, where protected is indistinguishable.
+            "ignore": [
+                "Phalcon\\Talon\\Traits\\DatabaseTrait::addTable",
+                "Phalcon\\Talon\\Traits\\DatabaseTrait::getDialect"
+            ]
+        },
+        "UnwrapArrayValues": {
+            // The filtered parts are joined with implode(), which ignores
+            // keys, so reindexing them is cosmetic.
+            "ignore": ["Phalcon\\Talon\\Database\\Schema\\SchemaGenerator::generate"]
+        },
+        "UnwrapRtrim": {
+            // The rtrim only normalizes a caller-supplied trailing slash.
+            // Without it the path gains a doubled separator, which both glob()
+            // and the filesystem resolve identically.
+            "ignore": [
+                "Phalcon\\Talon\\Database\\Schema\\SchemaCollector::definitions",
+                "Phalcon\\Talon\\Database\\Schema\\SchemaManifest::fromDirectory",
+                "Phalcon\\Talon\\Database\\Schema\\SchemaWriter::write"
+            ]
         },
         "MethodCallRemoval": {
             "ignore": [
+                // Reached only on Postgres and MySQL respectively; the unit
+                // suite infection runs is sqlite-only.
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::advanceSequence",
+                "Phalcon\\Talon\\Database\\Schema\\AbstractSchema::clearMysql",
+                "Phalcon\\Talon\\Database\\Connection::getPdo::89",
+                // Under the phalcon/phalcon (v6) provider the mocked
+                // Resultset derives count() from the rows property, so seeding
+                // the count property as well is redundant there. It is kept
+                // for the v5 C extension, whose final count() reads it - a
+                // difference this image cannot observe.
+                "Phalcon\\Talon\\Traits\\ResultSetTrait::mockResultSet::49",
                 // parent::setUp()/parent::tearDown() resolve to PHPUnit
                 // TestCase's empty template methods - removal is equivalent.
                 // Line-scoped so Di::reset()/resetConnections() stay mutable.
                 "Phalcon\\Talon\\PHPUnit\\AbstractUnitTestCase::setUp::40",
                 "Phalcon\\Talon\\PHPUnit\\AbstractDatabaseTestCase::tearDown::26",
+                "Phalcon\\Talon\\PHPUnit\\AbstractBrowserTestCase::tearDown::39",
                 // PDO on PHP >= 8.0 already defaults to ERRMODE_EXCEPTION;
                 // the explicit setAttribute() is a belt-and-braces no-op.
                 "Phalcon\\Talon\\Database\\Connection::getPdo::54"

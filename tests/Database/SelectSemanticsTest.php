@@ -77,6 +77,10 @@ final class SelectSemanticsTest extends AbstractDatabaseTestCase
         // Loose comparison on purpose: pgsql and mysql return the integer as a
         // string, sqlite as an int, and Talon does not normalize result types.
         $this->assertEquals(1, $rows[0]['key']);
+
+        // A criterion after the null one must still be applied. Row 2 carries
+        // a non-null note, so combining the two can never match.
+        $this->assertCount(0, $this->getFromDatabase('order', ['note' => null, 'key' => 2]));
     }
 
     public function testReservedWordIdentifiersAreQuoted(): void

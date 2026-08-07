@@ -43,6 +43,21 @@ final class AbstractSchemaRuntimeTest extends TestCase
         $this->assertSame(0, $this->rowCount());
     }
 
+    public function testConstructorClearsUnlessAskedNotTo(): void
+    {
+        $seed = $this->schema();
+        $seed->create();
+        $seed->insert(1, 'first');
+
+        // Default $withClear leaves the table empty; the opt-out leaves it be.
+        new WidgetSchema($this->pdo);
+        $this->assertSame(0, $this->rowCount());
+
+        $seed->insert(2, 'second');
+        new WidgetSchema($this->pdo, false);
+        $this->assertSame(1, $this->rowCount());
+    }
+
     public function testCreateRunsTheStatements(): void
     {
         $this->schema()->create();

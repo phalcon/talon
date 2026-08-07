@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Tests\Unit\Database\Schema;
 
 use Phalcon\Talon\Database\Dialect;
+use Phalcon\Talon\Database\Schema\AbstractSchema;
 use Phalcon\Talon\Database\Schema\SchemaCollector;
 use Phalcon\Talon\Database\Schema\SchemaDefinition;
 use Phalcon\Talon\Database\Schema\SchemaGenerator;
@@ -96,6 +97,40 @@ final class SchemaGeneratorTest extends TestCase
 
         $this->assertStringStartsWith('SET FOREIGN_KEY_CHECKS=0;', $sql);
         $this->assertStringEndsWith("SET FOREIGN_KEY_CHECKS=1;\n", $sql);
+    }
+
+    public function testStatementsAreTrimmedAndEmptyPartsDropped(): void
+    {
+        // sqlite has no pre- or post-schema here, so the dump must open on the
+        // first table with no leading blank line.
+        $this->assertStringStartsWith(
+            'DROP TABLE IF EXISTS "widgets";',
+            $this->generator()->generate(Dialect::Sqlite)
+        );
+
+        $padded = new class extends AbstractSchema {
+            protected string $table = 'padded';
+
+            protected function getStatementsMysql(): array
+            {
+                return ["\n   CREATE TABLE padded (id INT);   \n"];
+            }
+
+            protected function getStatementsPgsql(): array
+            {
+                return [];
+            }
+
+            protected function getStatementsSqlite(): array
+            {
+                return [];
+            }
+        };
+
+        $this->assertSame(
+            "DROP TABLE IF EXISTS `padded`;\n\nCREATE TABLE padded (id INT);\n",
+            $this->generator()->table($padded, Dialect::Mysql)
+        );
     }
 
     public function testTableIsEmptyWhenAbsentFromTheDialect(): void

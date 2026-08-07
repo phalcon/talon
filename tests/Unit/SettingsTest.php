@@ -227,6 +227,24 @@ final class SettingsTest extends TestCase
         );
     }
 
+    public function testFromEnvBuildsSchemaSettingsFromOverrides(): void
+    {
+        $settings = Settings::fromEnv([
+            'root'             => '/app',
+            'schema_namespace' => 'App\\Tests\\Schema',
+            'schema_output'    => 'resources/schema',
+            'schema_post'      => 'App\\Tests\\Schema\\PostSchema',
+            'schema_pre'       => 'App\\Tests\\Schema\\PreSchema',
+            'schema_source'    => 'tests/Schema',
+        ]);
+
+        $this->assertSame('App\\Tests\\Schema', $settings->get('schema_namespace'));
+        $this->assertSame('resources/schema', $settings->get('schema_output'));
+        $this->assertSame('App\\Tests\\Schema\\PostSchema', $settings->get('schema_post'));
+        $this->assertSame('App\\Tests\\Schema\\PreSchema', $settings->get('schema_pre'));
+        $this->assertSame('tests/Schema', $settings->get('schema_source'));
+    }
+
     public function testFromEnvDiscoversRootFromComposerJson(): void
     {
         // The package ships a composer.json at its root; discovery must find it.

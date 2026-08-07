@@ -4,11 +4,23 @@ All notable changes are documented here. The format is based on [Keep a Changelo
 
 ## [1.0.1](https://github.com/phalcon/talon/releases/tag/v1.0.1) (2026-08-07)
 
+### Changed
+
+### Added
+
+- Added more tests to cover infection and bump the coverage to 100%
+
 ### Fixed
+
+### Removed
 
 - `SchemaFixture::clear()` documented its return value as the rows removed. Only SQLite reports a count; MySQL and PostgreSQL clear with `TRUNCATE` and return `0`. [#30](https://github.com/phalcon/talon/issues/30)
 
 ## [1.0.0](https://github.com/phalcon/talon/releases/tag/v1.0.0) (2026-08-06)
+
+### Changed
+
+- `resources/schema/{mysql,pgsql,sqlite}.sql` are now generated directories, and `dump_file` in the four `resources/phpunit.*.xml` configs points at them. [#30](https://github.com/phalcon/talon/issues/30)
 
 ### Added
 
@@ -18,14 +30,12 @@ All notable changes are documented here. The format is based on [Keep a Changelo
 - `Connection` added `addTable()` and `tableExists()`; `DatabaseTrait` added `addTable()`. [#30](https://github.com/phalcon/talon/issues/30)
 - `SchemaWriter` throws `SchemaTableDuplicate` when two definitions declare the same table. [#30](https://github.com/phalcon/talon/issues/30)
 
-### Changed
-
-- `resources/schema/{mysql,pgsql,sqlite}.sql` are now generated directories, and `dump_file` in the four `resources/phpunit.*.xml` configs points at them. [#30](https://github.com/phalcon/talon/issues/30)
-
 ### Fixed
 
 - `bin/talon` now honors the Composer autoload path. [#30](https://github.com/phalcon/talon/issues/30)
 - `docs/index.md` was missing MariaDB throughout, six exceptions, and the `talon` command line runner. [#30](https://github.com/phalcon/talon/issues/30)
+
+### Removed
 
 ## [0.9.0](https://github.com/phalcon/talon/releases/tag/v0.9.0) (2026-07-30)
 

@@ -16,18 +16,23 @@ namespace Phalcon\Talon\Tests\Unit\Cli;
 use Phalcon\Talon\Cli\Command\SchemaCommand;
 use Phalcon\Talon\Exceptions\UnknownDriver;
 use Phalcon\Talon\Settings;
+use Phalcon\Talon\Traits\FileSystemTrait;
 use PHPUnit\Framework\TestCase;
 
 use function dirname;
 use function file_get_contents;
 use function fopen;
 use function glob;
-use function is_dir;
+use function rewind;
 use function rmdir;
-use function unlink;
+use function stream_get_contents;
+
+use const PHP_EOL;
 
 final class SchemaCommandTest extends TestCase
 {
+    use FileSystemTrait;
+
     private string $output = '';
 
     protected function setUp(): void
@@ -39,28 +44,10 @@ final class SchemaCommandTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach (['mysql', 'pgsql', 'sqlite'] as $driver) {
-            $directory = $this->output . '/' . $driver;
-            foreach (glob($directory . '/*') ?: [] as $file) {
-                unlink($file);
-            }
-
-            if (is_dir($directory)) {
-                rmdir($directory);
-            }
-        }
-
-        // Any stray file at the top level - a dump left by an earlier format,
-        // say - would make rmdir() warn, and failOnWarning turns that into a
-        // failure with nothing to do with what the test asserted.
-        foreach (glob($this->output . '/*.sql') ?: [] as $file) {
-            unlink($file);
-        }
-
-        if (is_dir($this->output)) {
-            rmdir($this->output);
-        }
-
+        // Mutation runs leave debris under misspelled paths, including
+        // dotfiles that glob() will not match. safeDeleteDirectory() walks
+        // the tree itself, so nothing survives to make rmdir() warn.
+        $this->safeDeleteDirectory($this->output);
         parent::tearDown();
     }
 
@@ -85,6 +72,27 @@ final class SchemaCommandTest extends TestCase
         );
     }
 
+    public function testWritesEveryRequestedDialectAndReportsEachPath(): void
+    {
+        $stdout = fopen('php://memory', 'rb+');
+        $this->assertIsResource($stdout);
+
+        $this->assertSame(0, $this->command($stdout)->execute(['mysql', 'sqlite']));
+
+        rewind($stdout);
+        $reported = (string) stream_get_contents($stdout);
+
+        $this->assertSame(
+            'Wrote ' . $this->root() . '/tests/_output/schema-command/mysql' . PHP_EOL
+            . 'Wrote ' . $this->root() . '/tests/_output/schema-command/sqlite' . PHP_EOL,
+            $reported
+        );
+
+        $this->assertFileExists($this->output . '/mysql/manifest.json');
+        $this->assertFileExists($this->output . '/sqlite/manifest.json');
+        $this->assertDirectoryDoesNotExist($this->output . '/pgsql');
+    }
+
     public function testWritesOnlyTheRequestedDialect(): void
     {
         $this->assertSame(0, $this->command()->execute(['sqlite']));
@@ -93,14 +101,17 @@ final class SchemaCommandTest extends TestCase
         $this->assertDirectoryDoesNotExist($this->output . '/mysql');
     }
 
-    private function command(): SchemaCommand
+    /**
+     * @param resource|null $stdout
+     */
+    private function command($stdout = null): SchemaCommand
     {
         $namespace = 'Phalcon\\Talon\\Tests\\Fixtures\\Schema';
 
         // fromArray() folds every key except root/db/paths/services into
         // `extra`, so the schema_* keys sit at the top level here.
         $settings = Settings::fromArray([
-            'root'             => dirname(__DIR__, 3),
+            'root'             => $this->root(),
             'schema_source'    => 'tests/Fixtures/Schema',
             'schema_namespace' => $namespace,
             'schema_output'    => 'tests/_output/schema-command',
@@ -108,9 +119,16 @@ final class SchemaCommandTest extends TestCase
             'schema_post'      => $namespace . '\\PostSchema',
         ]);
 
-        $stdout = fopen('php://memory', 'rb+');
-        $this->assertIsResource($stdout);
+        if ($stdout === null) {
+            $stdout = fopen('php://memory', 'rb+');
+            $this->assertIsResource($stdout);
+        }
 
         return new SchemaCommand($settings, $stdout);
+    }
+
+    private function root(): string
+    {
+        return dirname(__DIR__, 3);
     }
 }
