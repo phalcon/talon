@@ -27,6 +27,16 @@ final class SchemaCollectorTest extends TestCase
 {
     private const FIXTURE_NAMESPACE = 'Phalcon\\Talon\\Tests\\Fixtures\\Schema';
 
+    public function testClassesThatAreNotConcreteDefinitionsAreSkipped(): void
+    {
+        $collector = new SchemaCollector(
+            dirname(__DIR__, 3) . '/Fixtures/NotSchemas',
+            'Phalcon\\Talon\\Tests\\Fixtures\\NotSchemas'
+        );
+
+        $this->assertSame([], $collector->definitions());
+    }
+
     public function testDefinitionsAreSortedAndExcludePreAndPost(): void
     {
         $tables = array_map(

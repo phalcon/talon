@@ -20,7 +20,14 @@ namespace Phalcon\Talon\Database\Schema;
 interface SchemaFixture
 {
     /**
-     * @return int rows removed
+     * Empties the table.
+     *
+     * The count is not portable and must not be asserted on: only SQLite's
+     * DELETE reports affected rows. MySQL and Postgres clear the table with
+     * TRUNCATE, which reports none, so both return 0. Returns 0 when no
+     * connection is attached.
+     *
+     * @return int rows removed, on the drivers that report them
      */
     public function clear(): int;
 

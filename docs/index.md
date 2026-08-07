@@ -509,6 +509,10 @@ Two interfaces split the two lifetimes a fixture has. `AbstractSchema` implement
 | `Schema\SchemaDefinition` | build time, no connection | `getTable()`, `getStatements(Dialect)`, `getDependencies()` |
 | `Schema\SchemaFixture` | run time, needs PDO | `create()`, `drop()`, `clear()` |
 
+`clear()` empties the table, but do not assert on its return value. MySQL and PostgreSQL
+clear with `TRUNCATE`, which reports no affected rows, so both return `0`; only SQLite's
+`DELETE` returns a count.
+
 ### Generating the artifacts
 
 ```bash

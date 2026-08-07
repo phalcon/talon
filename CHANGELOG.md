@@ -2,6 +2,12 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [1.0.1](https://github.com/phalcon/talon/releases/tag/v1.0.1) (2026-08-07)
+
+### Fixed
+
+- `SchemaFixture::clear()` documented its return value as the rows removed. Only SQLite reports a count; MySQL and PostgreSQL clear with `TRUNCATE` and return `0`. [#30](https://github.com/phalcon/talon/issues/30)
+
 ## [1.0.0](https://github.com/phalcon/talon/releases/tag/v1.0.0) (2026-08-06)
 
 ### Added

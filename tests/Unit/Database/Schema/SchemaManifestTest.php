@@ -129,6 +129,34 @@ final class SchemaManifestTest extends TestCase
         $this->assertSame($this->directory . '/zones.sql', $manifest->getFile('zones'));
     }
 
+    public function testMalformedRowsAndDependenciesAreIgnored(): void
+    {
+        file_put_contents(
+            $this->directory . '/' . SchemaManifest::FILE,
+            '{"dialect":"sqlite","tables":['
+            . '"not-an-object",'
+            . '{"noTableKey":true},'
+            . '{"table":"widgets","dependencies":"not-a-list"}'
+            . ']}'
+        );
+
+        $manifest = SchemaManifest::fromDirectory($this->directory);
+
+        // The two junk rows are skipped; the third keeps its table but drops
+        // the non-list dependencies, and falls back to <table>.sql for a
+        // missing file key.
+        $this->assertSame(['widgets'], $manifest->getTables());
+        $this->assertSame([], $manifest->getDependencies('widgets'));
+        $this->assertSame($this->directory . '/widgets.sql', $manifest->getFile('widgets'));
+    }
+
+    public function testManifestWithoutATablesKeyReadsAsEmpty(): void
+    {
+        file_put_contents($this->directory . '/' . SchemaManifest::FILE, '{"dialect":"sqlite"}');
+
+        $this->assertSame([], SchemaManifest::fromDirectory($this->directory)->getTables());
+    }
+
     public function testMissingManifestThrows(): void
     {
         $this->expectException(SchemaManifestNotFound::class);

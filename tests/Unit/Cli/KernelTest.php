@@ -49,6 +49,17 @@ final class KernelTest extends TestCase
         $this->assertSame(0, $this->kernel()->handle(['talon']));
     }
 
+    public function testSchemaRendersACleanErrorForAnUnknownDriver(): void
+    {
+        $code = $this->kernel()->handle(['talon', 'schema', 'oracle']);
+
+        $this->assertSame(1, $code);
+        $this->assertSame(
+            "talon: Unknown database driver 'oracle'" . PHP_EOL,
+            $this->stream($this->stderr)
+        );
+    }
+
     public function testSuitesListsTheRepoSuites(): void
     {
         $code = $this->kernel()->handle(['talon', 'suites']);

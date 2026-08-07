@@ -14,8 +14,10 @@ declare(strict_types=1);
 namespace Phalcon\Talon\Tests\Unit\Database\Schema;
 
 use PDO;
+use Phalcon\Talon\Database\Schema\AbstractSchema;
 use Phalcon\Talon\Exceptions\SchemaConnectionMissing;
 use Phalcon\Talon\Tests\Fixtures\Schema\WidgetSchema;
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\TestCase;
 
 final class AbstractSchemaRuntimeTest extends TestCase
@@ -70,6 +72,42 @@ final class AbstractSchemaRuntimeTest extends TestCase
         $this->assertNotFalse($statement);
 
         $this->assertSame([], $statement->fetchAll());
+    }
+
+    public function testExecuteFailsTheTestWhenNoRowIsAffected(): void
+    {
+        $schema = new class ($this->pdo, false) extends AbstractSchema {
+            protected string $table = 'widgets';
+
+            public function touchMissingRow(): int
+            {
+                return $this->execute(
+                    'UPDATE widgets SET label = :label WHERE id = :id',
+                    [':label' => 'nobody', ':id' => 999]
+                );
+            }
+
+            protected function getStatementsMysql(): array
+            {
+                return ['CREATE TABLE widgets (id INT PRIMARY KEY, label VARCHAR(64));'];
+            }
+
+            protected function getStatementsPgsql(): array
+            {
+                return ['CREATE TABLE widgets (id INTEGER PRIMARY KEY, label VARCHAR(64));'];
+            }
+
+            protected function getStatementsSqlite(): array
+            {
+                return ['CREATE TABLE widgets (id INTEGER PRIMARY KEY, label TEXT);'];
+            }
+        };
+        $schema->create();
+
+        $this->expectException(AssertionFailedError::class);
+        $this->expectExceptionMessage("Failed to insert row into table 'widgets' using 'sqlite' driver");
+
+        $schema->touchMissingRow();
     }
 
     public function testExecuteReturnsAffectedRows(): void
