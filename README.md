@@ -1,4 +1,4 @@
-# Phalcon Talon
+# <img src="resources/talon-mark.svg" height="22" alt=""> Phalcon Talon
 
 [![Latest Version][packagist-version-badge]][packagist-version-link]
 [![PHP Version][php-version-badge]][packagist-version-link]

@@ -2,6 +2,18 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [1.0.2](https://github.com/phalcon/talon/releases/tag/v1.0.2) (2026-08-08)
+
+### Changed
+
+### Added
+
+- Added the talon logo in CLI and readme
+
+### Fixed
+
+### Removed
+
 ## [1.0.1](https://github.com/phalcon/talon/releases/tag/v1.0.1) (2026-08-07)
 
 ### Changed

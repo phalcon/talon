@@ -21,6 +21,8 @@ use Phalcon\Talon\Exceptions\Exception;
 use Phalcon\Talon\Talon;
 
 use function fwrite;
+use function getenv;
+use function stream_isatty;
 
 use const PHP_EOL;
 use const STDERR;
@@ -32,7 +34,10 @@ use const STDOUT;
  */
 final class Kernel
 {
-    private const PACKAGE = 'phalcon/talon';
+    private const COLOR_RESET = "\033[0m";
+    private const COLOR_TEAL  = "\033[38;5;36m";
+    private const MARK        = '(((';
+    private const PACKAGE     = 'phalcon/talon';
 
     /**
      * @param resource $stdout
@@ -59,7 +64,7 @@ final class Kernel
 
         $command = $input->command();
         if ($input->wantsHelp() || $command === null) {
-            fwrite($this->stdout, $this->usage());
+            fwrite($this->stdout, $this->usage($this->stdout));
 
             return 0;
         }
@@ -82,15 +87,41 @@ final class Kernel
 
     private function unknownCommand(string $command): int
     {
-        fwrite($this->stderr, "talon: unknown command '{$command}'" . PHP_EOL . $this->usage());
+        fwrite($this->stderr, "talon: unknown command '{$command}'" . PHP_EOL . $this->usage($this->stderr));
 
         return 1;
     }
 
-    private function usage(): string
+    /**
+     * The identity line a run opens with: the claw mark, the tool name and its
+     * version. The mark is colored against the stream it is headed for, so a
+     * piped run or one with NO_COLOR set gets the glyph and no control codes.
+     *
+     * @param resource $stream
+     */
+    private function banner($stream): string
     {
-        return <<<'USAGE'
-            Talon test runner
+        return $this->mark($stream) . ' talon ' . $this->version();
+    }
+
+    /**
+     * @param resource $stream
+     */
+    private function mark($stream): string
+    {
+        if (getenv('NO_COLOR') !== false || !stream_isatty($stream)) {
+            return self::MARK;
+        }
+
+        return self::COLOR_TEAL . self::MARK . self::COLOR_RESET;
+    }
+
+    /**
+     * @param resource $stream
+     */
+    private function usage($stream): string
+    {
+        return $this->banner($stream) . PHP_EOL . <<<'USAGE'
 
             Usage:
               talon run [suites...] [-- passthrough]   Run mapped PHPUnit suite(s)
