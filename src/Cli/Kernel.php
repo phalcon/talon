@@ -90,13 +90,6 @@ final class Kernel
         }
     }
 
-    private function unknownCommand(string $command): int
-    {
-        fwrite($this->stderr, "talon: unknown command '{$command}'" . PHP_EOL . $this->usage());
-
-        return 1;
-    }
-
     /**
      * The identity line a run opens with: the claw mark, the tool name and its
      * version. The mark carries no escapes when the output is piped or
@@ -126,6 +119,13 @@ final class Kernel
         }
 
         return self::COLOR_TEAL . self::MARK . self::COLOR_RESET;
+    }
+
+    private function unknownCommand(string $command): int
+    {
+        fwrite($this->stderr, "talon: unknown command '{$command}'" . PHP_EOL . $this->usage());
+
+        return 1;
     }
 
     private function usage(): string
