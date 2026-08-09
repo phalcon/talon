@@ -39,14 +39,19 @@ final class Kernel
     private const MARK        = '(((';
     private const PACKAGE     = 'phalcon/talon';
 
+    private bool $decorated;
+
     /**
-     * @param resource $stdout
-     * @param resource $stderr
+     * @param resource  $stdout
+     * @param resource  $stderr
+     * @param bool|null $decorated Null auto-detects from NO_COLOR and tty.
      */
     public function __construct(
         private $stdout = STDOUT,
         private $stderr = STDERR,
+        ?bool $decorated = null,
     ) {
+        $this->decorated = $decorated ?? $this->detectDecoration($stdout);
     }
 
     /**
@@ -64,7 +69,7 @@ final class Kernel
 
         $command = $input->command();
         if ($input->wantsHelp() || $command === null) {
-            fwrite($this->stdout, $this->usage($this->stdout));
+            fwrite($this->stdout, $this->usage());
 
             return 0;
         }
@@ -87,41 +92,45 @@ final class Kernel
 
     private function unknownCommand(string $command): int
     {
-        fwrite($this->stderr, "talon: unknown command '{$command}'" . PHP_EOL . $this->usage($this->stderr));
+        fwrite($this->stderr, "talon: unknown command '{$command}'" . PHP_EOL . $this->usage());
 
         return 1;
     }
 
     /**
      * The identity line a run opens with: the claw mark, the tool name and its
-     * version. The mark is colored against the stream it is headed for, so a
-     * piped run or one with NO_COLOR set gets the glyph and no control codes.
-     *
-     * @param resource $stream
+     * version. The mark carries no escapes when the output is piped or
+     * NO_COLOR is set, so only the glyph survives.
      */
-    private function banner($stream): string
+    private function banner(): string
     {
-        return $this->mark($stream) . ' talon ' . $this->version();
+        return $this->mark() . ' talon ' . $this->version();
     }
 
     /**
      * @param resource $stream
      */
-    private function mark($stream): string
+    private function detectDecoration($stream): bool
     {
-        if (getenv('NO_COLOR') !== false || !stream_isatty($stream)) {
+        if (getenv('NO_COLOR') !== false) {
+            return false;
+        }
+
+        return stream_isatty($stream);
+    }
+
+    private function mark(): string
+    {
+        if (false === $this->decorated) {
             return self::MARK;
         }
 
         return self::COLOR_TEAL . self::MARK . self::COLOR_RESET;
     }
 
-    /**
-     * @param resource $stream
-     */
-    private function usage($stream): string
+    private function usage(): string
     {
-        return $this->banner($stream) . PHP_EOL . <<<'USAGE'
+        return $this->banner() . PHP_EOL . <<<'USAGE'
 
             Usage:
               talon run [suites...] [-- passthrough]   Run mapped PHPUnit suite(s)

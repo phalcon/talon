@@ -18,6 +18,7 @@ use Phalcon\Talon\Cli\Kernel;
 use PHPUnit\Framework\TestCase;
 
 use function fopen;
+use function putenv;
 use function rewind;
 use function stream_get_contents;
 
@@ -39,6 +40,42 @@ final class KernelTest extends TestCase
         $this->assertNotFalse($err);
         $this->stdout = $out;
         $this->stderr = $err;
+    }
+
+    public function testHelpMarkIsColoredWhenDecorated(): void
+    {
+        $this->kernel(true)->handle(['talon', '--help']);
+
+        $this->assertStringContainsString(
+            "\033[38;5;36m(((\033[0m talon ",
+            $this->stream($this->stdout)
+        );
+    }
+
+    public function testHelpMarkIsPlainWhenNotDecorated(): void
+    {
+        $this->kernel(false)->handle(['talon', '--help']);
+
+        $output = $this->stream($this->stdout);
+
+        $this->assertStringContainsString('((( talon ', $output);
+        $this->assertStringNotContainsString("\033[", $output);
+    }
+
+    public function testDecorationIsOffWhenNoColorIsSet(): void
+    {
+        putenv('NO_COLOR=1');
+
+        try {
+            $this->kernel()->handle(['talon', '--help']);
+        } finally {
+            putenv('NO_COLOR');
+        }
+
+        $output = $this->stream($this->stdout);
+
+        $this->assertStringContainsString('((( talon ', $output);
+        $this->assertStringNotContainsString("\033[", $output);
     }
 
     public function testHelpAndBareInvocationPrintUsage(): void
@@ -102,9 +139,9 @@ final class KernelTest extends TestCase
         );
     }
 
-    private function kernel(): Kernel
+    private function kernel(?bool $decorated = null): Kernel
     {
-        return new Kernel($this->stdout, $this->stderr);
+        return new Kernel($this->stdout, $this->stderr, $decorated);
     }
 
     /**
