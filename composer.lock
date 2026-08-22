@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4e241282dba5c577f146f180bb77ce4e",
+    "content-hash": "3d668284b1e104817cf35c8630792e21",
     "packages": [
         {
             "name": "masterminds/html5",
@@ -2117,16 +2117,16 @@
         },
         {
             "name": "phalcon/phalcon",
-            "version": "v6.0.0beta6",
+            "version": "v6.0.0beta7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phalcon/phalcon.git",
-                "reference": "d1e211d84363fdee7a7deaedf9369a9d4bffc513"
+                "reference": "8fd9b4d37387f4c75adce30745a7557a057f388e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phalcon/phalcon/zipball/d1e211d84363fdee7a7deaedf9369a9d4bffc513",
-                "reference": "d1e211d84363fdee7a7deaedf9369a9d4bffc513",
+                "url": "https://api.github.com/repos/phalcon/phalcon/zipball/8fd9b4d37387f4c75adce30745a7557a057f388e",
+                "reference": "8fd9b4d37387f4c75adce30745a7557a057f388e",
                 "shasum": ""
             },
             "require": {
@@ -2147,8 +2147,8 @@
                 "pds/composer-script-names": "^1.0",
                 "pds/skeleton": "^1.0",
                 "phalcon/phql": "1.0.x-dev",
-                "phalcon/quill": "dev-master",
-                "phalcon/talon": "^0.9.0",
+                "phalcon/quill": "^0.3.0",
+                "phalcon/talon": "^1.0.0",
                 "phalcon/volt": "1.0.x-dev",
                 "phpbench/phpbench": "^1.4",
                 "phpstan/phpstan": "^2.2",
@@ -2185,7 +2185,7 @@
             ],
             "support": {
                 "issues": "https://github.com/phalcon/phalcon/issues",
-                "source": "https://github.com/phalcon/phalcon/tree/v6.0.0beta6"
+                "source": "https://github.com/phalcon/phalcon/tree/v6.0.0beta7"
             },
             "funding": [
                 {
@@ -2197,7 +2197,7 @@
                     "type": "open_collective"
                 }
             ],
-            "time": "2026-08-03T01:07:43+00:00"
+            "time": "2026-08-19T15:55:52+00:00"
         },
         {
             "name": "phalcon/traits",
@@ -5738,9 +5738,7 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {
-        "phalcon/phalcon": 15
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
