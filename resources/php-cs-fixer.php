@@ -11,22 +11,39 @@
 
 declare(strict_types=1);
 
-$finder = PhpCsFixer\Finder::create()
-    ->in([__DIR__ . '/../src', __DIR__ . '/../tests']);
+/**
+ * Ordering rules:
+ * - use statements: alphabetical
+ * - class members: by visibility (public -> protected -> private), then
+ *   alphabetical within each group
+ *
+ * Run from the project root:
+ *   composer cs-fixer       (dry-run, shows diff)
+ *   composer cs-fixer-fix   (applies the changes)
+ */
 
-return (new PhpCsFixer\Config())
-    ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
+use PhpCsFixer\Config;
+use PhpCsFixer\Finder;
+use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
+
+$root = dirname(__DIR__);
+
+$finder = Finder::create()
+    ->in(
+        [
+            $root . '/src',
+            $root . '/tests',
+        ]
+    );
+
+return (new Config())
+    ->setParallelConfig(ParallelConfigFactory::detect())
     // declare_strict_types is a risky rule.
     ->setRiskyAllowed(true)
     ->setUsingCache(true)
-    ->setCacheFile(__DIR__ . '/../tests/_output/.php-cs-fixer.cache')
+    ->setCacheFile($root . '/tests/_output/.php-cs-fixer.cache')
     ->setRules(
         [
-            // The two rules below are a local addition on top of the ordering
-            // rules shared with the other Phalcon projects. They are kept here
-            // until the global coding standard is agreed, at which point they
-            // should move into the shared set rather than stay a divergence.
-            // PSR-12 (via phpcs) checks neither, so nothing else enforces them.
             'declare_strict_types'   => true,
             'no_unused_imports'      => true,
             'ordered_imports'        => [
@@ -58,6 +75,23 @@ return (new PhpCsFixer\Config())
                     'method_protected',
                     'method_private',
                 ],
+            ],
+            /**
+             * Both sorters default `null_adjustment` to 'always_first', which
+             * would rewrite every `string|null` to `null|string`. Phalcon puts
+             * null last, and so does the model quill builds from both this and
+             * the Zephir source, so last it stays.
+             */
+            'ordered_types'          => [
+                'sort_algorithm'  => 'alpha',
+                'null_adjustment' => 'always_last',
+            ],
+            'phpdoc_types_order'     => [
+                'sort_algorithm'  => 'alpha',
+                'null_adjustment' => 'always_last',
+            ],
+            'types_spaces'           => [
+                'space' => 'single',
             ],
         ]
     )
