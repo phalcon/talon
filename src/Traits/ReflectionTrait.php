@@ -23,7 +23,7 @@ trait ReflectionTrait
     /**
      * @param class-string|object $obj
      */
-    public function callProtectedMethod(string | object $obj, string $method, mixed ...$args): mixed
+    public function callProtectedMethod(object | string $obj, string $method, mixed ...$args): mixed
     {
         $reflection = new ReflectionClass($obj);
         $target     = is_object($obj) ? $obj : $reflection->newInstanceWithoutConstructor();

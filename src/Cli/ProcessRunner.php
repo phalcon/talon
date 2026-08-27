@@ -53,7 +53,7 @@ class ProcessRunner
      * @param list<string>               $command
      * @param array<string, string>|null $environment
      *
-     * @return resource|false
+     * @return false|resource
      */
     protected function open(array $command, string $cwd, ?array $environment)
     {

@@ -35,7 +35,7 @@ trait ResultSetTrait
      * @param array<int|string, mixed> $dataSet
      * @param class-string             $className
      *
-     * @return Resultset<int, ModelInterface<object>>&MockObject
+     * @return MockObject&Resultset<int, ModelInterface<object>>
      */
     public function mockResultSet(array $dataSet, string $className = Resultset::class): MockObject
     {

@@ -94,7 +94,7 @@ trait RestTrait
      * @param array<array-key, mixed>|string $params
      * @param array<string, mixed>           $files
      */
-    public function send(string $method, string $url, array|string $params = [], array $files = []): void
+    public function send(string $method, string $url, array | string $params = [], array $files = []): void
     {
         $method = strtoupper($method);
         $uri    = $this->restUrl($url);
@@ -175,7 +175,7 @@ trait RestTrait
      * @param array<array-key, mixed>|string $params
      * @param array<string, mixed>           $files
      */
-    public function sendPatch(string $url, array|string $params = [], array $files = []): void
+    public function sendPatch(string $url, array | string $params = [], array $files = []): void
     {
         $this->send('PATCH', $url, $params, $files);
     }
@@ -184,7 +184,7 @@ trait RestTrait
      * @param array<array-key, mixed>|string $params
      * @param array<string, mixed>           $files
      */
-    public function sendPost(string $url, array|string $params = [], array $files = []): void
+    public function sendPost(string $url, array | string $params = [], array $files = []): void
     {
         $this->send('POST', $url, $params, $files);
     }
@@ -193,7 +193,7 @@ trait RestTrait
      * @param array<array-key, mixed>|string $params
      * @param array<string, mixed>           $files
      */
-    public function sendPut(string $url, array|string $params = [], array $files = []): void
+    public function sendPut(string $url, array | string $params = [], array $files = []): void
     {
         $this->send('PUT', $url, $params, $files);
     }
