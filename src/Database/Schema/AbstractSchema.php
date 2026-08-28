@@ -111,12 +111,10 @@ abstract class AbstractSchema implements SchemaDefinition, SchemaFixture
             return;
         }
 
-        $this->requireConnection()->exec(sprintf(
-            "SELECT setval(pg_get_serial_sequence('%s', '%s'), %d)",
-            $this->table,
-            $column,
-            $id
-        ));
+        $statement = $this->requireConnection()->prepare(
+            'SELECT setval(pg_get_serial_sequence(?, ?), ?)'
+        );
+        $statement->execute([$this->table, $column, $id]);
     }
 
     /**
