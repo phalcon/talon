@@ -2,6 +2,19 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [1.0.3](https://github.com/phalcon/talon/releases/tag/v1.0.3) (2026-08-28)
+
+### Changed
+
+### Added
+
+### Fixed
+
+- Additional strengthening of the query parameters in `AbstractSchema`
+- Removed GitHub secrets where not necessary from the actions (prevent leakage)
+
+### Removed
+
 ## [1.0.2](https://github.com/phalcon/talon/releases/tag/v1.0.2) (2026-08-08)
 
 ### Changed
@@ -175,7 +188,7 @@ All notable changes are documented here. The format is based on [Keep a Changelo
 
 - `AbstractUnitTestCase::setUp()` now resets the default Phalcon DI for per-test isolation.
 - The functional base is split into `FunctionalTrait` (actions) and `FunctionalAssertionsTrait` (assertions)
-- The containerized dev/test environment now covers PHP 8.1-8.5 for both Phalcon variants (`v5` C extension, `v6` the `phalcon/phalcon` package) built via PIE, with database readiness handled by Docker Compose service healthchecks. [#4](https://github.com/phalcon/talon/issues/4) 
+- The containerized dev/test environment now covers PHP 8.1-8.5 for both Phalcon variants (`v5` C extension, `v6` the `phalcon/phalcon` package) built via PIE, with database readiness handled by Docker Compose service healthchecks. [#4](https://github.com/phalcon/talon/issues/4)
 
 ### Added
 
