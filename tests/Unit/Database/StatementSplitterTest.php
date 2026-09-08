@@ -68,6 +68,7 @@ final class StatementSplitterTest extends TestCase
     {
         $this->assertSame(["SELECT\n1"], StatementSplitter::split("SELECT\n1;\n"));
     }
+
     public function testSplitsOnSemicolonAndSkipsComments(): void
     {
         $sql = "-- a comment\nCREATE TABLE a(id int);\n# another\nINSERT INTO a VALUES (1);\n";

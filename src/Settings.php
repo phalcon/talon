@@ -34,6 +34,7 @@ use function sprintf;
 final class Settings implements SettingsContract
 {
     private const DEFAULT_HOST = '127.0.0.1';
+
     private const DRIVERS      = ['mariadb', 'mysql', 'pgsql', 'sqlite'];
 
     /**
@@ -158,8 +159,8 @@ final class Settings implements SettingsContract
             $options = [];
             foreach ($fields as $field => $spec) {
                 [$envKey, $default, $cast] = $spec;
-                $value           = $env($envKey, $default);
-                $options[$field] = $cast === 'int' ? (int) $value : $value;
+                $value                     = $env($envKey, $default);
+                $options[$field]           = $cast === 'int' ? (int) $value : $value;
             }
             $services[$name] = new ServiceOptions($name, $options);
         }

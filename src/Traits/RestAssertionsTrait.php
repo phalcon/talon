@@ -159,6 +159,7 @@ trait RestAssertionsTrait
             'Failed asserting that the response does not match the given JSON types.'
         );
     }
+
     abstract public function grabHttpHeader(string $name): ?string;
 
     abstract public function grabResponse(): string;

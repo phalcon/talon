@@ -54,6 +54,7 @@ final class AbstractUnitTestCaseTest extends AbstractUnitTestCase
         $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'mockWithoutConstructor'))->isPublic());
         $this->assertTrue((new ReflectionMethod(AbstractUnitTestCase::class, 'phalconAvailable'))->isProtected());
     }
+
     public function testInheritsTraitHelpers(): void
     {
         $this->assertSame('/x/', $this->getDirSeparator('/x'));

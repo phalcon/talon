@@ -18,6 +18,7 @@ interface Settings
     public function cachePath(string $relative = ''): string;
 
     public function dataPath(string $relative = ''): string;
+
     public function get(string $key, mixed $default = null): mixed;
 
     public function getDatabaseDsn(string $driver): string;

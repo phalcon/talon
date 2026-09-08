@@ -35,8 +35,11 @@ use const STDOUT;
 final class Kernel
 {
     private const COLOR_RESET = "\033[0m";
+
     private const COLOR_TEAL  = "\033[38;5;36m";
+
     private const MARK        = '(((';
+
     private const PACKAGE     = 'phalcon/talon';
 
     private bool $decorated;

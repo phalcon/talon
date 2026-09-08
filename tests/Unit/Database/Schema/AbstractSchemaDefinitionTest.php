@@ -55,7 +55,7 @@ final class AbstractSchemaDefinitionTest extends TestCase
 
     private function schema(): AbstractSchema
     {
-        return new class extends AbstractSchema {
+        return new class () extends AbstractSchema {
             protected string $table = 'widgets';
 
             protected function getStatementsMysql(): array

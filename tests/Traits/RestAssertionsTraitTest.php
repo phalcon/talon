@@ -27,6 +27,7 @@ final class RestAssertionsTraitTest extends AbstractRestTestCase
     private array $headers = ['Content-Type' => 'application/json'];
 
     private int $status = 200;
+
     /**
      * Each range assertion is pinned at both bounds, one code inside and one
      * outside, so shifting either literal by one is observable.

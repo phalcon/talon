@@ -38,7 +38,9 @@ use const JSON_UNESCAPED_UNICODE;
 final class SchemaManifest
 {
     public const FILE        = 'manifest.json';
+
     public const POST_SCHEMA = '_postSchema.sql';
+
     public const PRE_SCHEMA  = '_preSchema.sql';
 
     /**

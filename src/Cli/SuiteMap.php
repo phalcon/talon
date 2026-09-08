@@ -39,6 +39,7 @@ use function str_starts_with;
 final class SuiteMap
 {
     private const CONFIG_FILE = 'talon.php';
+
     private const RESERVED    = 'all';
 
     private string $default = '';

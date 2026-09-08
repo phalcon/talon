@@ -70,9 +70,9 @@ abstract class AbstractUnitTestCase extends TestCase
      *
      * @template T of object
      *
-     * @param class-string<T>          $class
-     * @param array<array-key, mixed>  $ctorArgs
-     * @param array<string, mixed>     $overrides
+     * @param class-string<T>         $class
+     * @param array<array-key, mixed> $ctorArgs
+     * @param array<string, mixed>    $overrides
      *
      * @return T
      */

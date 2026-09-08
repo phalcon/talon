@@ -212,6 +212,7 @@ final class BrowserTraitTest extends AbstractBrowserTestCase
         $this->assertInstanceOf(Request::class, $request);
         $this->assertSame('http://localhost/browser/landed', $request->getUri());
     }
+
     protected function appFactory(): callable
     {
         return static fn () => require __DIR__ . '/../Fakes/Browser/app.php';

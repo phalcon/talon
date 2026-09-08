@@ -24,6 +24,7 @@ final class AbstractFunctionalTestCaseTest extends AbstractFunctionalTestCase
         $this->assertController('test');
         $this->assertResponseContentContains('Operator');
     }
+
     protected function appFactory(): callable
     {
         return static fn () => require __DIR__ . '/../../Fakes/App/app.php';

@@ -84,7 +84,7 @@ final class SchemaManifestTest extends TestCase
 
     public function testEncodeTakesSchemaQualifiedNamesVerbatim(): void
     {
-        $qualified = new class extends AbstractSchema {
+        $qualified = new class () extends AbstractSchema {
             protected string $table = 'private.co_orders_x_products';
 
             protected function getStatementsMysql(): array

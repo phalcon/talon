@@ -49,6 +49,7 @@ final class SuiteMapTest extends TestCase
         $this->assertTrue($map->resolve('unit')->configExists());
         $this->assertFalse($map->resolve('db')->configExists());
     }
+
     public function testConfiguredProjectMergesGlobalsIntoSuites(): void
     {
         $map = new SuiteMap($this->fixture('configured'));

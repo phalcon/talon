@@ -24,6 +24,7 @@ final class EnvironmentTest extends TestCase
             Environment::viaExtension() || Environment::viaImplementation()
         );
     }
+
     public function testPhalconIsAvailableInTheTestImage(): void
     {
         $this->assertTrue(Environment::phalconAvailable());

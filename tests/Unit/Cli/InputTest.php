@@ -25,6 +25,7 @@ final class InputTest extends TestCase
         $this->assertTrue($input->wantsHelp());
         $this->assertTrue($input->wantsVersion());
     }
+
     public function testCommandAndArguments(): void
     {
         $input = Input::fromArgv(['talon', 'run', 'mysql', 'pgsql']);

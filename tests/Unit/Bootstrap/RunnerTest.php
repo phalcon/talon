@@ -57,7 +57,7 @@ final class RunnerTest extends TestCase
         // build/ is gitignored and outside the analyzers' scan tree, so
         // mutation-run debris (crashed mutants skip cleanup, sometimes with
         // mutated unreadable permissions) cannot break phpstan/phpcs.
-        $root = dirname(__DIR__, 3) . '/build/runner-' . uniqid();
+        $root     = dirname(__DIR__, 3) . '/build/runner-' . uniqid();
         $settings = Settings::fromArray(['root' => $root]);
 
         Runner::for($settings)->boot();

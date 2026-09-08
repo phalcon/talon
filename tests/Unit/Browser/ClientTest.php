@@ -85,6 +85,7 @@ final class ClientTest extends TestCase
 
         $client->request('GET', 'http://localhost/');
     }
+
     public function testGetRendersContent(): void
     {
         $client  = $this->client();

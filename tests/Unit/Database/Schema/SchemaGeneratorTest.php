@@ -108,7 +108,7 @@ final class SchemaGeneratorTest extends TestCase
             $this->generator()->generate(Dialect::Sqlite)
         );
 
-        $padded = new class extends AbstractSchema {
+        $padded = new class () extends AbstractSchema {
             protected string $table = 'padded';
 
             protected function getStatementsMysql(): array

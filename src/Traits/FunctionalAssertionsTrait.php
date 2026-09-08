@@ -69,6 +69,7 @@ trait FunctionalAssertionsTrait
     {
         $this->assertStringContainsString($needle, $this->getContent());
     }
+
     abstract public function getContent(): string;
 
     abstract protected function dispatcher(): Dispatcher;

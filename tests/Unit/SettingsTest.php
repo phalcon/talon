@@ -102,6 +102,7 @@ final class SettingsTest extends TestCase
 
         $this->assertSame(['host' => 'indexed-host'], $settings->getServiceOptions('0'));
     }
+
     public function testFromArrayImplementsContractAndResolvesPaths(): void
     {
         $settings = Settings::fromArray(['root' => '/app']);
@@ -496,8 +497,8 @@ final class SettingsTest extends TestCase
                 'root' => '/app',
                 'db'   => [
                     'pgsql' => [
-                        'host' => '127.0.0.1',
-                        'port' => 5432,
+                        'host'   => '127.0.0.1',
+                        'port'   => 5432,
                         'dbname' => 'talon'
                     ]
                 ],

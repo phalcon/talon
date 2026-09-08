@@ -29,6 +29,7 @@ final class AbstractBrowserTestCaseTest extends AbstractBrowserTestCase
         $this->assertNull(Di::getDefault());
         $this->assertSame([], $_SESSION);
     }
+
     protected function appFactory(): callable
     {
         return static fn () => require __DIR__ . '/../../Fakes/Browser/app.php';
