@@ -2,6 +2,18 @@
 
 All notable changes are documented here. The format is based on [Keep a Changelog][keep_a_changelog] and this project adheres to [Semantic Versioning][semantic_versioning].
 
+## [1.0.4](https://github.com/phalcon/talon/releases/tag/v1.0.3) (2026-09-08)
+
+### Changed
+
+### Added
+
+### Fixed
+
+- `Browser\Client` now releases the application after each request, so the database connections of a long test suite do not accumulate
+
+### Removed
+
 ## [1.0.3](https://github.com/phalcon/talon/releases/tag/v1.0.3) (2026-08-28)
 
 ### Changed

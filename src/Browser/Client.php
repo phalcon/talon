@@ -25,6 +25,7 @@ use Symfony\Component\BrowserKit\Request as BrowserKitRequest;
 use Symfony\Component\BrowserKit\Response as BrowserKitResponse;
 
 use function assert;
+use function gc_collect_cycles;
 use function get_debug_type;
 use function gmdate;
 use function is_object;
@@ -90,6 +91,15 @@ final class Client extends AbstractBrowser
             return $this->normalizeResponse($response, $this->extractSetCookies($app));
         } finally {
             [$_GET, $_POST, $_REQUEST, $_COOKIE, $_SERVER] = $backup;
+
+            // The app graph is circular - the container holds the services and
+            // the services hold the container - so reference counting alone
+            // never frees the app this request built. Until the cycle collector
+            // runs, every dropped app keeps its resources (a database
+            // connection, for one) open, and a long suite runs the server out
+            // of connections. Release the graph here instead.
+            unset($app, $response);
+            gc_collect_cycles();
         }
     }
 

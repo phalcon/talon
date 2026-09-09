@@ -20,12 +20,32 @@ use Phalcon\Talon\Tests\Fakes\App\FakeAppWithMalformedCookies;
 use Phalcon\Talon\Tests\Fakes\App\FakeAppWithNonCookiesService;
 use Phalcon\Talon\Tests\Fakes\App\FakeAppWithNonDiContainer;
 use Phalcon\Talon\Tests\Fakes\App\FakeAppWithoutGetDi;
+use Phalcon\Talon\Tests\Fakes\App\FakeAppWithSelfReference;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use Symfony\Component\BrowserKit\Exception\LogicException;
+use WeakReference;
 
 final class ClientTest extends TestCase
 {
+    public function testAppIsReleasedAfterTheRequest(): void
+    {
+        $reference = null;
+        $client    = new Client(
+            static function () use (&$reference) {
+                $app       = new FakeAppWithSelfReference();
+                $reference = WeakReference::create($app);
+
+                return $app;
+            }
+        );
+
+        $client->request('GET', 'http://localhost/');
+
+        $this->assertInstanceOf(WeakReference::class, $reference);
+        $this->assertNull($reference->get());
+    }
+
     public function testAppWithoutGetDiSkipsCookieExtraction(): void
     {
         $client = new Client(static fn () => new FakeAppWithoutGetDi());
